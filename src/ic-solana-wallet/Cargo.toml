@@ -14,7 +14,7 @@ ic-management-canister-types = { workspace = true }
 ic-solana = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
-
+sha2 = { workspace = true }
 [dev-dependencies]
 #solana-sdk = "2.0"
 #solana-client = "2.0"

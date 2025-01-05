@@ -1,7 +1,7 @@
 type CommitmentLevel = variant { Finalized; Confirmed; Processed };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
 type HttpHeader = record { value : text; name : text };
-type InitArgs = record { schnorr_key : opt text; sol_canister : opt principal };
+type InitArgs = record { schnorr_key : opt text; cos_canister : opt principal };
 type JsonRpcError = record { code : int64; message : text };
 type RejectionCode = variant {
   NoError;

@@ -7,7 +7,7 @@ use ic_cdk::{
 };
 use serde::Serialize;
 
-use crate::eddsa::SchnorrKey;
+use crate::eddsa::EcdsaKey;
 
 thread_local! {
     pub static STATE: RefCell<Option<State>> = const { RefCell::new(None) };
@@ -15,24 +15,24 @@ thread_local! {
 
 #[derive(Debug, Deserialize, CandidType, Clone)]
 pub struct InitArgs {
-    pub sol_canister: Option<CanisterId>,
-    pub schnorr_key: Option<String>,
+    pub cos_canister: Option<CanisterId>,
+    pub ecdsa_key: Option<String>,
 }
 
 #[derive(CandidType, Clone, Debug, Deserialize, Serialize)]
 pub struct State {
-    pub sol_canister: CanisterId,
-    pub schnorr_key: SchnorrKey,
+    pub cos_canister: CanisterId,
+    pub ecdsa_key: EcdsaKey,
 }
 
 impl State {
     pub fn init(args: InitArgs) {
         replace_state(Self {
-            sol_canister: args.sol_canister.expect("Missing sol_canister"),
-            schnorr_key: args
-                .schnorr_key
-                .and_then(|s| SchnorrKey::from_str(&s).ok())
-                .unwrap_or(SchnorrKey::TestKey1),
+            cos_canister: args.cos_canister.expect("Missing cos_canister"),
+            ecdsa_key: args
+                .ecdsa_key
+                .and_then(|s| EcdsaKey::from_str(&s).ok())
+                .unwrap_or(EcdsaKey::TestKey1),
         });
     }
 
@@ -43,11 +43,11 @@ impl State {
     pub fn post_upgrade(args: Option<InitArgs>) {
         let (mut state,): (State,) = stable_restore().expect("failed to restore state");
         if let Some(args) = args {
-            if let Some(sol_canister) = args.sol_canister {
-                state.sol_canister = sol_canister;
+            if let Some(cos_canister) = args.cos_canister {
+                state.cos_canister = cos_canister;
             }
-            if let Some(schnorr_key) = args.schnorr_key {
-                state.schnorr_key = SchnorrKey::from_str(&schnorr_key).expect("Invalid schnorr key");
+            if let Some(ecdsa_key) = args.ecdsa_key {
+                state.ecdsa_key = EcdsaKey::from_str(&ecdsa_key).expect("Invalid ecdsa key");
             }
         }
         replace_state(state);
@@ -56,8 +56,8 @@ impl State {
 
 impl std::fmt::Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Solana canister: {:?}", self.sol_canister)?;
-        writeln!(f, "Schnorr key: {:?}", self.schnorr_key)?;
+        writeln!(f, "Cosmos canister: {:?}", self.cos_canister)?;
+        writeln!(f, "ECDSA key: {:?}", self.ecdsa_key)?;
         Ok(())
     }
 }
