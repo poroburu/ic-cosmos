@@ -11,9 +11,9 @@ use crate::setup::SolanaWalletSetup;
 fn test_address() {
     let setup = SolanaWalletSetup::new();
     let addr = setup.call_update::<_, String>("address", ()).wait();
-    assert_eq!(addr, "F57BD4FrpkM49idKyws2WBBjyR8W8dRsepLJ4EqLP3Qb");
+    assert_eq!(addr, "HjTytiovNScuG3om7oicSugh6hqKi72qy8hfeeSWHUCK");
     let addr = setup.as_controller().call_update::<_, String>("address", ()).wait();
-    assert_eq!(addr, "8GU8W7fAAy2trcy36fjVJuJhEY5uA3EYTvA7jupM72wG");
+    assert_eq!(addr, "8n3gJnkSZMKQkddsNfhg9LPSbVFDdFa9HSV9FS3V8dj");
 }
 
 #[test]
