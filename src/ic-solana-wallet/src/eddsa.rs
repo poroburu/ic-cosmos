@@ -7,7 +7,6 @@ use candid::{CandidType, Principal};
 
 use ic_cdk::api::management_canister::ecdsa::{EcdsaCurve, EcdsaKeyId, EcdsaPublicKeyArgument, EcdsaPublicKeyResponse, SignWithEcdsaArgument, SignWithEcdsaResponse};
 use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
 
 // https://internetcomputer.org/docs/current/references/t-sigs-how-it-works/#fees-for-the-t-ecdsa-production-key
 pub const ECDSA_SIGN_COST: u128 = 26_153_846_153;
