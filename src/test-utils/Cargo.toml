@@ -8,7 +8,6 @@ candid = { workspace = true }
 ic-cdk = { workspace = true }
 ic-canister-log = { workspace = true }
 ic-canisters-http-types = { workspace = true }
-ic-management-canister-types = { workspace = true }
 ic-metrics-encoder = { workspace = true }
 ic-stable-structures = { workspace = true }
 url = { workspace = true }

@@ -10,7 +10,6 @@ edition = { workspace = true }
 [dependencies]
 candid = { workspace = true }
 ic-cdk = { workspace = true }
-ic-management-canister-types = { workspace = true }
 ic-solana = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }

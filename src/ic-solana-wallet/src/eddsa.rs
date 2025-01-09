@@ -4,10 +4,8 @@ use std::{
 };
 
 use candid::{CandidType, Principal};
-use ic_management_canister_types::{
-    DerivationPath, EcdsaCurve, EcdsaKeyId, ECDSAPublicKeyArgs, ECDSAPublicKeyResponse,
-    SignWithECDSAArgs, SignWithECDSAReply,
-};
+
+use ic_cdk::api::management_canister::ecdsa::{EcdsaCurve, EcdsaKeyId, EcdsaPublicKeyArgument, EcdsaPublicKeyResponse, SignWithEcdsaArgument, SignWithEcdsaResponse};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 
@@ -48,13 +46,13 @@ impl FromStr for EcdsaKey {
 }
 
 /// Fetches the secp256k1 public key from the cosmos canister.
-pub async fn ecdsa_public_key(key: EcdsaKey, derivation_path: Vec<ByteBuf>) -> Vec<u8> {
-    let res: Result<(ECDSAPublicKeyResponse,), _> = ic_cdk::call(
+pub async fn ecdsa_public_key(key: EcdsaKey, derivation_path: Vec<Vec<u8>>) -> Vec<u8> {
+    let res: Result<(EcdsaPublicKeyResponse,), _> = ic_cdk::call(
         Principal::management_canister(),
         "ecdsa_public_key",
-        (ECDSAPublicKeyArgs {
+        (EcdsaPublicKeyArgument {
             canister_id: None,
-            derivation_path: DerivationPath::new(derivation_path),
+            derivation_path: derivation_path,
             key_id: EcdsaKeyId {
                 curve: EcdsaCurve::Secp256k1,
                 name: key.to_string(),
@@ -67,15 +65,15 @@ pub async fn ecdsa_public_key(key: EcdsaKey, derivation_path: Vec<ByteBuf>) -> V
 }
 
 /// Signs a message with an secp256k1 key.
-pub async fn sign_with_ecdsa(key: EcdsaKey, derivation_path: Vec<ByteBuf>, message: Vec<u8>) -> Vec<u8> {
+pub async fn sign_with_ecdsa(key: EcdsaKey, derivation_path: Vec<Vec<u8>>, message: Vec<u8>) -> Vec<u8> {
     ic_cdk::api::call::msg_cycles_accept128(ECDSA_SIGN_COST);
 
-    let res: Result<(SignWithECDSAReply,), _> = ic_cdk::api::call::call_with_payment(
+    let res: Result<(SignWithEcdsaResponse,), _> = ic_cdk::api::call::call_with_payment(
         Principal::management_canister(),
         "sign_with_ecdsa",
-        (SignWithECDSAArgs {
-            message_hash: sha256(&message),
-            derivation_path: DerivationPath::new(derivation_path),
+        (SignWithEcdsaArgument {
+            message_hash: sha256(&message).to_vec(),
+            derivation_path: derivation_path,
             key_id: EcdsaKeyId {
                 curve: EcdsaCurve::Secp256k1,
                 name: key.to_string(),

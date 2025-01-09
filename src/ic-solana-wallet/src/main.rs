@@ -11,7 +11,6 @@ use ic_solana_wallet::{
     state::{read_state, InitArgs, State},
     utils::validate_caller_not_anonymous,
 };
-use serde_bytes::ByteBuf;
 
 /// Returns the public key of the Solana wallet associated with the caller.
 ///
@@ -23,7 +22,7 @@ use serde_bytes::ByteBuf;
 pub async fn address() -> String {
     let caller = validate_caller_not_anonymous();
     let key_name = read_state(|s| s.ecdsa_key.to_owned());
-    let derived_path = vec![ByteBuf::from(caller.as_slice())];
+    let derived_path = vec![caller.as_slice().to_vec()];
     let pk = ecdsa_public_key(key_name, derived_path).await;
 
     // For secp256k1, compressed public key is 33 bytes:
@@ -56,7 +55,7 @@ pub async fn address() -> String {
 pub async fn sign_message(message: String) -> Vec<u8> {
     let caller = validate_caller_not_anonymous();
     let key_name = read_state(|s| s.ecdsa_key.to_owned());
-    let derived_path = vec![ByteBuf::from(caller.as_slice())];
+    let derived_path = vec![caller.as_slice().to_vec()];
     sign_with_ecdsa(key_name, derived_path, message.as_bytes().into()).await
 }
 
@@ -94,7 +93,7 @@ pub async fn send_transaction(
     }
 
     let key_name = read_state(|s| s.ecdsa_key.to_owned());
-    let derived_path = vec![ByteBuf::from(caller.as_slice())];
+    let derived_path = vec![caller.as_slice().to_vec()];
 
     let signature = sign_with_ecdsa(key_name, derived_path, tx.message_data())
         .await

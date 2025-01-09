@@ -35,7 +35,6 @@ ic-cdk = "0.17"
 ic-canister-log = "0.2"
 ic-canisters-http-types = { git = "https://github.com/dfinity/ic", package = "ic-canisters-http-types" }
 ic-crypto-ed25519 = { git = "https://github.com/dfinity/ic", package = "ic-crypto-ed25519" }
-ic-management-canister-types = { git = "https://github.com/dfinity/ic", package = "ic-management-canister-types" }
 ic-test-utilities-load-wasm = { git = "https://github.com/dfinity/ic", rev = "release-2024-09-26_01-31-base" }
 ic-metrics-encoder = "1"
 ic-stable-structures = "0.6"
