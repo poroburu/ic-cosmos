@@ -4,7 +4,7 @@ use std::{
 };
 
 use candid::CandidType;
-use ic_crypto_ed25519::PrivateKey;
+use ic_crypto_secp256k1::PrivateKey;
 use serde::{de::Error, Deserialize, Serialize};
 
 use super::UiInnerInstructions;
@@ -80,8 +80,8 @@ impl Transaction {
     }
 
     pub fn sign(&mut self, position: usize, signer: &[u8]) {
-        let pk = PrivateKey::deserialize_raw(signer).unwrap();
-        let signature = Signature(pk.sign_message(&self.message_data()));
+        let pk = PrivateKey::deserialize_sec1(signer).unwrap();
+        let signature = Signature(pk.sign_message_with_ecdsa(&self.message_data()));
         self.add_signature(position, signature)
     }
 
@@ -360,13 +360,14 @@ mod tests {
     };
 
     fn create_sample_transaction() -> Transaction {
-        let pk = PrivateKey::deserialize_raw(&[
+        let pk = PrivateKey::deserialize_sec1(&[
             255, 101, 36, 24, 124, 23, 167, 21, 132, 204, 155, 5, 185, 58, 121, 75, 156, 227, 116, 193, 215, 38, 142,
             22, 8, 14, 229, 239, 119, 93, 5, 218,
         ])
         .unwrap();
 
-        let pubkey = Pubkey::from(pk.public_key().serialize_raw());
+        let pubkey = Pubkey::try_from(&pk.public_key().serialize_sec1(true)[1..])
+            .expect("Invalid public key");
 
         let to = Pubkey::from([
             1, 1, 1, 4, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 8, 7, 6, 5, 4, 1, 1, 1,
@@ -381,7 +382,7 @@ mod tests {
         let message = Message::new_with_blockhash(&[instruction], None, &BlockHash::default());
 
         let mut tx = Transaction::new_unsigned(message);
-        tx.sign(0, &pk.serialize_raw());
+        tx.sign(0, &pk.serialize_sec1());
 
         tx
     }

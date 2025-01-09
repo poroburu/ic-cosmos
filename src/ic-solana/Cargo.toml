@@ -18,7 +18,7 @@ futures = { workspace = true }
 getrandom = { version = "0.2", features = ["custom"] }
 ic-canister-log = { workspace = true }
 ic-cdk = { workspace = true }
-ic-crypto-ed25519 = { workspace = true }
+ic-crypto-secp256k1 = { workspace = true }
 ic-metrics-encoder = { workspace = true }
 ic-sha3 = "1"
 serde = { workspace = true }

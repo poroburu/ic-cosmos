@@ -1,9 +1,10 @@
 use std::{fmt, mem, str::FromStr};
 
 use candid::CandidType;
-use ic_crypto_ed25519::PublicKey;
+use ic_crypto_secp256k1::PublicKey;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
 
 /// Number of bytes in a pubkey
 pub const PUBKEY_BYTES: usize = 32;
@@ -31,12 +32,17 @@ impl Pubkey {
         self.0
     }
 
-    /// Verify an Ed25519 signature
+    /// Verify an secp256k1 signature
     ///
     /// Returns Ok if the signature is valid, or Err otherwise
     pub fn verify_signature(&self, msg: &[u8], signature: &[u8]) -> bool {
-        let pubkey = PublicKey::deserialize_raw(&self.0).expect("invalid public key");
-        pubkey.verify_signature(msg, signature).is_ok()
+
+        // Reconstruct the full compressed SEC1 format (33 bytes)
+        let mut sec1_bytes = vec![0x02];  // Same compression prefix used in address()
+        sec1_bytes.extend_from_slice(&self.0);  // Add the x-coordinate we stored
+
+        let pubkey = PublicKey::deserialize_sec1(&sec1_bytes).expect("invalid public key");
+        pubkey.verify_ecdsa_signature(msg, signature)
     }
 }
 
