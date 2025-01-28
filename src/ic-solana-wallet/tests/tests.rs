@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use cosmrs::bank::MsgSend;
+use cosmrs::crypto::secp256k1::VerifyingKey;
 use cosmrs::crypto::PublicKey;
 use cosmrs::proto::cosmos::tx::v1beta1::TxRaw;
 use cosmrs::tendermint::chain::Id;
@@ -19,9 +20,11 @@ fn test_address() {
     let setup = SolanaWalletSetup::new();
 
     let addr = setup.call_update::<_, String>("address", ()).wait();
-    assert_eq!(addr, "21Nb5RPUh9q47wq6nsFcb48ngqqndHq4EH5Goyjm3xgmo");
+    assert_eq!(addr, "2BRR6P64ikaqCyJA1oLFW2a6FrBmHwjF8RHZeEQioqKw9");
+    let public_key = get_pubkey(addr);
+    println!("addr: {:?}", public_key.account_id("neutron"));
     let addr = setup.as_controller().call_update::<_, String>("address", ()).wait();
-    assert_eq!(addr, "247fCqSWyNCyWAJZ5HoXMoZLMgtPRg1WChWFgwWzEshok");
+    assert_eq!(addr, "tpjAAg3YphZd7zytYuCbFojxC5RDTFTrbSJTj1iM2zNZ");
 }
 
 #[test]
@@ -41,10 +44,10 @@ fn test_sign_message() {
 #[test]
 fn test_sign_cosmos_message() {
     let setup = SolanaWalletSetup::new();
-    let message = get_unsigned_tx_bytes().unwrap();
 
     let address = setup.call_update::<_, String>("address", ()).wait();
     println!("address: {}", address);
+    let message = get_unsigned_tx_bytes(address.clone()).unwrap();
     let pubkey = Pubkey::from_str(&address).unwrap();
 
     // Now we can pass the bytes directly without encoding
@@ -59,18 +62,17 @@ fn test_sign_cosmos_message() {
     println!("signature: {:?}", signature);
     println!("message(base64): {:?}", base64::encode(&message));
     println!("signature(base64): {:?}", base64::encode(&signature));
-    let signed_tx = get_signed_tx_bytes(signature).unwrap();
+    let signed_tx = get_signed_tx_bytes(address, signature).unwrap();
     println!("signed_tx(base64): {:?}", base64::encode(&signed_tx));
 }
 // common transaction data
-fn sign_doc_data() -> SignDoc {
-    let pubkey_json =
-        r#"{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A2NNkZ4Sj7WjERQs+itX7dc+BO8HeSgdEwspUg9Px8Fa"}"#;
-    let public_key = PublicKey::from_json(pubkey_json).unwrap();
+fn sign_doc_data(address: String) -> SignDoc {
+    let public_key = get_pubkey(address);
+    let address = public_key.account_id("neutron");
 
     // Create message
     let msg_send = MsgSend {
-        from_address: "neutron100ge9lnqxrqc9fhsmeavxg3f20g7rcw075pzlq".parse().unwrap(),
+        from_address: address.unwrap(),
         to_address: "neutron1wqs3zz2gnkhksd5sma6uca3rxs9tdtx8rchxsw".parse().unwrap(),
         amount: vec![Coin {
             denom: "untrn".parse().unwrap(),
@@ -101,11 +103,16 @@ fn sign_doc_data() -> SignDoc {
 
     let chain_id = chain::Id::try_from("pion-1").unwrap();
 
-    SignDoc::new(&tx_body, &auth_info, &chain_id, 577644).unwrap()
+    SignDoc::new(&tx_body, &auth_info, &chain_id, 577723).unwrap()
 }
 
-fn get_unsigned_tx_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let sign_doc = sign_doc_data();
+fn get_pubkey(address: String) -> PublicKey {
+    let address_bytes = bs58::decode(address).into_vec().unwrap();
+    let pubkey = VerifyingKey::from_sec1_bytes(&address_bytes).unwrap();
+    PublicKey::from(pubkey)
+}
+fn get_unsigned_tx_bytes(address: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let sign_doc = sign_doc_data(address);
 
     // Get the raw bytes that will be hashed and signed by the canister
     let message_bytes = sign_doc.into_bytes()?;
@@ -113,8 +120,8 @@ fn get_unsigned_tx_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     Ok(message_bytes)
 }
 
-fn raw_tx_data(signature: Vec<u8>) -> Result<Raw, Box<dyn std::error::Error>> {
-    let sign_doc = sign_doc_data();
+fn raw_tx_data(address: String, signature: Vec<u8>) -> Result<Raw, Box<dyn std::error::Error>> {
+    let sign_doc = sign_doc_data(address);
 
     // Create TxRaw with empty signatures
     let tx_raw = cosmrs::proto::cosmos::tx::v1beta1::TxRaw {
@@ -126,8 +133,8 @@ fn raw_tx_data(signature: Vec<u8>) -> Result<Raw, Box<dyn std::error::Error>> {
     Ok(Raw::from(tx_raw))
 }
 
-fn get_signed_tx_bytes(signature: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let raw_tx = raw_tx_data(signature)?;
+fn get_signed_tx_bytes(address: String, signature: Vec<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let raw_tx = raw_tx_data(address, signature)?;
     let message_bytes = raw_tx.to_bytes()?;
     Ok(message_bytes)
 }
