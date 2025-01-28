@@ -52,6 +52,11 @@ serde_bytes = "0.11"
 url = "2.5"
 proptest = "1.5.0"
 sha2 = "0.10.6"
+secp256k1 = "0.30.0"
+bip32 = "0.5.2"
+bs58 = "0.5.1"
+cosmrs = "0.21.0"
+
 
 [profile.release]
 debug = false

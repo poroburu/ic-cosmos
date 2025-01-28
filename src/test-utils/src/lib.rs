@@ -5,6 +5,7 @@ pub mod utils;
 
 use std::{marker::PhantomData, sync::Arc, time::Duration};
 
+use bip32::{DerivationPath, Mnemonic, XPrv};
 use candid::{encode_args, utils::ArgumentEncoder, CandidType, Decode, Encode, Principal};
 use ic_cdk::api::management_canister::main::CanisterId;
 pub use mock::*;
@@ -14,6 +15,7 @@ use pocket_ic::{
     PocketIc, PocketIcBuilder,
 };
 use serde::de::DeserializeOwned;
+use std::str::FromStr;
 use utils::assert_reply;
 
 const INITIAL_CYCLES: u128 = 100_000_000_000_000_000;

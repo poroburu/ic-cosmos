@@ -16,3 +16,6 @@ ic-test-utilities-load-wasm = { workspace = true }
 serde_bytes = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+secp256k1 = { workspace = true }
+bip32 = { workspace = true }
+bs58 = { workspace = true }

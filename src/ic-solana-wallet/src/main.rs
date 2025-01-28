@@ -32,12 +32,8 @@ pub async fn address() -> String {
         panic!("Expected 33-byte compressed public key");
     }
 
-    // Extract just the x-coordinate (last 32 bytes)
-    let x_coordinate = &pk[1..];
-
-    Pubkey::try_from(x_coordinate)
-        .expect("Invalid public key")
-        .to_string()
+    //let x_coordinate = &pk[1..];
+    Pubkey::try_from(pk).expect("Invalid public key").to_string()
 }
 
 /// Signs a provided message using the caller's Eddsa key.
@@ -52,11 +48,11 @@ pub async fn address() -> String {
 ///   failure.
 #[update(name = "signMessage")]
 #[candid_method(query, rename = "signMessage")]
-pub async fn sign_message(message: String) -> Vec<u8> {
+pub async fn sign_message(message: Vec<u8>) -> Vec<u8> {
     let caller = validate_caller_not_anonymous();
     let key_name = read_state(|s| s.ecdsa_key.to_owned());
     let derived_path = vec![caller.as_slice().to_vec()];
-    sign_with_ecdsa(key_name, derived_path, message.as_bytes().into()).await
+    sign_with_ecdsa(key_name, derived_path, message).await
 }
 
 /// Signs and sends a transaction to the Solana network.

@@ -5,7 +5,10 @@ use std::{
 
 use candid::CandidType;
 
-use ic_cdk::api::management_canister::ecdsa::{EcdsaCurve, EcdsaKeyId, EcdsaPublicKeyArgument, EcdsaPublicKeyResponse, SignWithEcdsaArgument, SignWithEcdsaResponse};
+use ic_cdk::api::management_canister::ecdsa::{
+    EcdsaCurve, EcdsaKeyId, EcdsaPublicKeyArgument, EcdsaPublicKeyResponse, SignWithEcdsaArgument,
+    SignWithEcdsaResponse,
+};
 use serde::{Deserialize, Serialize};
 
 // https://internetcomputer.org/docs/current/references/t-sigs-how-it-works/#fees-for-the-t-ecdsa-production-key
@@ -46,17 +49,16 @@ impl FromStr for EcdsaKey {
 
 /// Fetches the secp256k1 public key from the cosmos canister.
 pub async fn ecdsa_public_key(key: EcdsaKey, derivation_path: Vec<Vec<u8>>) -> Vec<u8> {
-    let res: Result<(EcdsaPublicKeyResponse,), _> = ic_cdk::api::management_canister::ecdsa::ecdsa_public_key(
-        EcdsaPublicKeyArgument {
+    let res: Result<(EcdsaPublicKeyResponse,), _> =
+        ic_cdk::api::management_canister::ecdsa::ecdsa_public_key(EcdsaPublicKeyArgument {
             canister_id: None,
             derivation_path: derivation_path,
             key_id: EcdsaKeyId {
                 curve: EcdsaCurve::Secp256k1,
                 name: key.to_string(),
             },
-        },
-    )
-    .await;
+        })
+        .await;
 
     res.expect("Failed to fetch secp256k1 public key").0.public_key
 }
@@ -65,17 +67,16 @@ pub async fn ecdsa_public_key(key: EcdsaKey, derivation_path: Vec<Vec<u8>>) -> V
 pub async fn sign_with_ecdsa(key: EcdsaKey, derivation_path: Vec<Vec<u8>>, message: Vec<u8>) -> Vec<u8> {
     ic_cdk::api::call::msg_cycles_accept128(ECDSA_SIGN_COST);
 
-    let res: Result<(SignWithEcdsaResponse,), _> = ic_cdk::api::management_canister::ecdsa::sign_with_ecdsa(
-        SignWithEcdsaArgument {
+    let res: Result<(SignWithEcdsaResponse,), _> =
+        ic_cdk::api::management_canister::ecdsa::sign_with_ecdsa(SignWithEcdsaArgument {
             message_hash: sha256(&message).to_vec(),
             derivation_path: derivation_path,
             key_id: EcdsaKeyId {
                 curve: EcdsaCurve::Secp256k1,
                 name: key.to_string(),
             },
-        },
-    )
-    .await;
+        })
+        .await;
 
     res.expect("Failed to sign with secp256k1").0.signature
 }

@@ -51,10 +51,10 @@ type UiTransactionEncoding = variant {
 service : (InitArgs) -> {
   address : () -> (text);
   sendTransaction : (
-      RpcServices,
-      opt RpcConfig,
-      text,
-      opt RpcSendTransactionConfig,
-    ) -> (Result) query;
-  signMessage : (text) -> (blob) query;
-}
+    RpcServices,
+    opt RpcConfig,
+    text,
+    opt RpcSendTransactionConfig,
+  ) -> (Result) query;
+  signMessage : (blob) -> (blob) query;
+};

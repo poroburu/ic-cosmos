@@ -7,15 +7,42 @@ use thiserror::Error;
 
 
 /// Number of bytes in a pubkey
-pub const PUBKEY_BYTES: usize = 32;
+pub const PUBKEY_BYTES: usize = 32 + 1;
 
 /// Maximum string length of a base58 encoded pubkey
-const MAX_BASE58_LEN: usize = 44;
+const MAX_BASE58_LEN: usize = 44 + 1;
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, CandidType)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, CandidType)]
 pub struct Pubkey(pub(crate) [u8; PUBKEY_BYTES]);
 
-#[derive(Error, Debug, Serialize, Clone, PartialEq, Eq)]
+impl Default for Pubkey {
+    fn default() -> Self {
+        Self([0u8; PUBKEY_BYTES])
+    }
+}
+
+impl<'de> Deserialize<'de> for Pubkey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let bytes: Vec<u8> = Vec::deserialize(deserializer)?;
+        bytes.try_into()
+            .map(Self)
+            .map_err(|_| serde::de::Error::custom("Invalid pubkey length"))
+    }
+}
+
+impl Serialize for Pubkey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.to_vec().serialize(serializer)
+    }
+}
+
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum ParsePubkeyError {
     #[error("String is the wrong size")]
     WrongSize,
@@ -36,12 +63,14 @@ impl Pubkey {
     ///
     /// Returns Ok if the signature is valid, or Err otherwise
     pub fn verify_signature(&self, msg: &[u8], signature: &[u8]) -> bool {
-
+        println!("self: {:?}", self);
         // Reconstruct the full compressed SEC1 format (33 bytes)
-        let mut sec1_bytes = vec![0x02];  // Same compression prefix used in address()
-        sec1_bytes.extend_from_slice(&self.0);  // Add the x-coordinate we stored
+        // Use 0x02 prefix for even y-coordinate, 0x03 for odd
+        //let prefix = if self.0[31] & 1 == 0 { 0x02 } else { 0x03 };
+        //let mut sec1_bytes = vec![prefix];
+        //sec1_bytes.extend_from_slice(&self.0);  // Add the x-coordinate we stored
 
-        let pubkey = PublicKey::deserialize_sec1(&sec1_bytes).expect("invalid public key");
+        let pubkey = PublicKey::deserialize_sec1(&self.0).expect("invalid public key");
         pubkey.verify_ecdsa_signature(msg, signature)
     }
 }
@@ -50,7 +79,7 @@ impl FromStr for Pubkey {
     type Err = ParsePubkeyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() > MAX_BASE58_LEN {
+        if s.len() > MAX_BASE58_LEN{
             return Err(ParsePubkeyError::WrongSize);
         }
         let pubkey_vec = bs58::decode(s).into_vec().map_err(|_| ParsePubkeyError::Invalid)?;
@@ -79,11 +108,12 @@ impl TryFrom<&[u8]> for Pubkey {
 }
 
 impl TryFrom<Vec<u8>> for Pubkey {
-    type Error = Vec<u8>;
+    type Error = std::array::TryFromSliceError;
 
     #[inline]
     fn try_from(pubkey: Vec<u8>) -> Result<Self, Self::Error> {
-        <[u8; PUBKEY_BYTES]>::try_from(pubkey).map(Self::from)
+        println!("pubkey: {:?}", pubkey);
+        <[u8; PUBKEY_BYTES]>::try_from(&pubkey[..]).map(Self::from)
     }
 }
 
