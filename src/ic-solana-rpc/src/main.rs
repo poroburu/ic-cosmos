@@ -224,9 +224,9 @@ use ic_solana_rpc::{
 /// the latest cluster-confirmed slot.
 #[update(name = "sol_getHealth")]
 #[candid_method(rename = "sol_getHealth")]
-pub async fn sol_get_health(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<String> {
+pub async fn sol_get_health(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<bool> {
     let client = rpc_client(source, config);
-    client.get_health().await
+    Ok(client.get_health().await?)
 }
 
 // /// Returns the highest slot information that the node has snapshots for.

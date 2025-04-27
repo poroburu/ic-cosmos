@@ -102,7 +102,7 @@ impl Cluster {
         match self {
             Cluster::Devnet => "https://api.devnet.solana.com",
             Cluster::Testnet => "https://api.testnet.solana.com",
-            Cluster::Mainnet => "https://api.mainnet-beta.solana.com",
+            Cluster::Mainnet => "https://rpc.cosmos.directory/cosmoshub",
             Cluster::Localnet => "http://127.0.0.1:8899",
             Cluster::Debug => "http://34.90.18.145:8899",
             Cluster::Custom(url, _ws_url) => url,

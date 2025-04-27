@@ -689,7 +689,7 @@ service : (InitArgs) -> {
   // sol_getFirstAvailableBlock : (RpcServices, opt RpcConfig) -> (Result_2);
   // sol_getGenesisHash : (RpcServices, opt RpcConfig) -> (Result);
   // sol_getHealth : (RpcServices, opt RpcConfig) -> (Result);
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_34);
   // sol_getHighestSnapshotSlot : (RpcServices, opt RpcConfig) -> (Result_12);
   // sol_getIdentity : (RpcServices, opt RpcConfig) -> (Result_13);
   // sol_getInflationGovernor : (RpcServices, opt RpcConfig) -> (Result_14);

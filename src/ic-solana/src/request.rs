@@ -88,7 +88,7 @@ impl fmt::Display for RpcRequest {
             // RpcRequest::GetFeeForMessage => "getFeeForMessage",
             // RpcRequest::GetFirstAvailableBlock => "getFirstAvailableBlock",
             // RpcRequest::GetGenesisHash => "getGenesisHash",
-            RpcRequest::GetHealth => "getHealth",
+            RpcRequest::GetHealth => "health",
             // RpcRequest::GetIdentity => "getIdentity",
             // RpcRequest::GetInflationGovernor => "getInflationGovernor",
             // RpcRequest::GetInflationRate => "getInflationRate",

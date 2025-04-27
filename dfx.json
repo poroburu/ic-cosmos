@@ -22,10 +22,7 @@
       "optimize": "cycles"
     },
     "e2e": {
-      "dependencies": [
-        "solana_rpc",
-        "solana_wallet"
-      ],
+      "dependencies": ["solana_rpc", "solana_wallet"],
       "type": "rust",
       "package": "e2e",
       "candid": "src/e2e/e2e.did",

@@ -521,8 +521,14 @@ impl RpcClient {
     ///
     /// Method relies on the `getHealth` RPC call to get the health status:
     ///   https://solana.com/docs/rpc/http/getHealth
-    pub async fn get_health(&self) -> RpcResult<String> {
-        self.call(RpcRequest::GetHealth, (), Some(128)).await?.into()
+    pub async fn get_health(&self) -> RpcResult<bool> {
+        let response: crate::rpc_client::types::JsonRpcResponse<serde_json::Value> =
+            self.call(RpcRequest::GetHealth, (), Some(128)).await?;
+        match (response.result, response.error) {
+            (Some(val), _) if val.is_object() && val.as_object().unwrap().is_empty() => Ok(true), // healthy
+            (_, Some(_err)) => Ok(false), // unhealthy (or propagate error if you prefer)
+            _ => Err(RpcError::ParseError("Unexpected health response".to_string())),
+        }
     }
 
     // /// Returns the highest slot information that the node has snapshots for.
