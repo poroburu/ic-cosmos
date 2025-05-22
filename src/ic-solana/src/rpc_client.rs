@@ -20,7 +20,7 @@ use crate::{
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
         CommitmentConfig, EncodedConfirmedTransactionWithStatusMeta, Epoch, EpochInfo, EpochSchedule, Pubkey,
-        RpcAccountInfoConfig, RpcBlockConfig, RpcBlockProductionConfig, RpcContextConfig, RpcEpochConfig,
+        RpcAbciInfo, RpcAccountInfoConfig, RpcBlockConfig, RpcBlockProductionConfig, RpcContextConfig, RpcEpochConfig,
         RpcGetVoteAccountsConfig, RpcLargestAccountsConfig, RpcLeaderScheduleConfig, RpcProgramAccountsConfig,
         RpcSendTransactionConfig, RpcSignatureStatusConfig, RpcSignaturesForAddressConfig,
         RpcSimulateTransactionConfig, RpcStatusInfo, RpcSupplyConfig, RpcTokenAccountsFilter, RpcTransactionConfig,
@@ -304,6 +304,13 @@ impl RpcClient {
     }
     pub async fn get_status(&self) -> RpcResult<RpcStatusInfo> {
         let response: JsonRpcResponse<RpcStatusInfo> = self.call(RpcRequest::GetStatus, (), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
+    /// Returns the ABCI info of the node.
+    /// This includes the application name, version, and last block information.
+    pub async fn get_abci_info(&self) -> RpcResult<RpcAbciInfo> {
+        let response: JsonRpcResponse<RpcAbciInfo> = self.call(RpcRequest::GetAbciInfo, (), Some(128)).await?;
         response.into_rpc_result()
     }
 

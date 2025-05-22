@@ -1,3 +1,10 @@
+type AbciResponse = record {
+  last_block_app_hash : text;
+  data : text;
+  version : text;
+  last_block_height : text;
+  app_version : opt text;
+};
 type Auth = variant { RegisterProvider; Manage };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
 type HttpHeader = record { value : text; name : text };
@@ -54,8 +61,10 @@ type RejectionCode = variant {
   CanisterReject;
 };
 type Result = variant { Ok : text; Err : RpcError };
-type Result_1 = variant { Ok : bool; Err : RpcError };
-type Result_2 = variant { Ok : RpcStatusInfo; Err : RpcError };
+type Result_1 = variant { Ok : RpcAbciInfo; Err : RpcError };
+type Result_2 = variant { Ok : bool; Err : RpcError };
+type Result_3 = variant { Ok : RpcStatusInfo; Err : RpcError };
+type RpcAbciInfo = record { response : AbciResponse };
 type RpcApi = record { network : text; headers : opt vec HttpHeader };
 type RpcAuth = variant {
   QueryParam : HttpHeader;
@@ -120,8 +129,9 @@ service : (InitArgs) -> {
   registerProvider : (RegisterProviderArgs) -> ();
   request : (RpcServices, text, text, opt nat64) -> (Result);
   requestCost : (text, nat64) -> (nat) query;
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_1);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_2);
+  sol_getAbciInfo : (RpcServices, opt RpcConfig) -> (Result_1);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_2);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_3);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }

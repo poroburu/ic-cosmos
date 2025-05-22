@@ -24,6 +24,7 @@ pub enum RpcRequest {
     // GetGenesisHash,
     GetHealth,
     GetStatus,
+    GetAbciInfo,
 }
 
 impl fmt::Display for RpcRequest {
@@ -48,6 +49,7 @@ impl fmt::Display for RpcRequest {
             // RpcRequest::GetGenesisHash => "getGenesisHash",
             RpcRequest::GetHealth => "health",
             RpcRequest::GetStatus => "status",
+            RpcRequest::GetAbciInfo => "abci_info",
         };
 
         write!(f, "{method}")

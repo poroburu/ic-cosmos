@@ -12,7 +12,7 @@ use ic_solana::{
     metrics::{encode_metrics, read_metrics, Metrics},
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
-    types::{CandidValue, RpcStatusInfo},
+    types::{CandidValue, RpcAbciInfo, RpcStatusInfo},
 };
 use ic_solana_rpc::{
     auth::{do_authorize, do_deauthorize, require_manage_or_controller, require_register_provider, Auth},
@@ -39,6 +39,13 @@ pub async fn sol_get_health(source: RpcServices, config: Option<RpcConfig>) -> R
 pub async fn sol_get_status(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<RpcStatusInfo> {
     let client = rpc_client(source, config);
     Ok(client.get_status().await?)
+}
+
+#[update(name = "sol_getAbciInfo")]
+#[candid_method(rename = "sol_getAbciInfo")]
+pub async fn sol_get_abci_info(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<RpcAbciInfo> {
+    let client = rpc_client(source, config);
+    Ok(client.get_abci_info().await?)
 }
 
 /// Sends a JSON-RPC request to a specified Solana node provider,
