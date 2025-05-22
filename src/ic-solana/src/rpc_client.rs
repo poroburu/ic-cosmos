@@ -302,6 +302,9 @@ impl RpcClient {
             _ => Err(RpcError::ParseError("Unexpected health response".to_string())),
         }
     }
+    pub async fn get_status(&self) -> RpcResult<RpcStatusInfo> {
+        self.call(RpcRequest::GetStatus, (), Some(128)).await?;
+    }
 
     /// Processes the result of an RPC method call by handling consistent and inconsistent responses
     /// from multiple providers.

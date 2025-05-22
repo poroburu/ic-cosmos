@@ -23,6 +23,7 @@ pub enum RpcRequest {
     // GetFirstAvailableBlock,
     // GetGenesisHash,
     GetHealth,
+    GetStatus,
 }
 
 impl fmt::Display for RpcRequest {
@@ -46,6 +47,7 @@ impl fmt::Display for RpcRequest {
             // RpcRequest::GetFirstAvailableBlock => "getFirstAvailableBlock",
             // RpcRequest::GetGenesisHash => "getGenesisHash",
             RpcRequest::GetHealth => "health",
+            RpcRequest::GetStatus => "status",
         };
 
         write!(f, "{method}")

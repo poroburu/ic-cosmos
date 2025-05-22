@@ -34,6 +34,13 @@ pub async fn sol_get_health(source: RpcServices, config: Option<RpcConfig>) -> R
     Ok(client.get_health().await?)
 }
 
+#[update(name = "sol_getStatus")]
+#[candid_method(rename = "sol_getStatus")]
+pub async fn sol_get_status(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<bool> {
+    let client = rpc_client(source, config);
+    Ok(client.get_status().await?)
+}
+
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
 #[update]
