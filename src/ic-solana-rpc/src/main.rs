@@ -12,7 +12,7 @@ use ic_solana::{
     metrics::{encode_metrics, read_metrics, Metrics},
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
-    types::CandidValue,
+    types::{CandidValue, RpcStatusInfo},
 };
 use ic_solana_rpc::{
     auth::{do_authorize, do_deauthorize, require_manage_or_controller, require_register_provider, Auth},
@@ -36,7 +36,7 @@ pub async fn sol_get_health(source: RpcServices, config: Option<RpcConfig>) -> R
 
 #[update(name = "sol_getStatus")]
 #[candid_method(rename = "sol_getStatus")]
-pub async fn sol_get_status(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<bool> {
+pub async fn sol_get_status(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<RpcStatusInfo> {
     let client = rpc_client(source, config);
     Ok(client.get_status().await?)
 }

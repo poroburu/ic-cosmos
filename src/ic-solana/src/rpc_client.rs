@@ -23,9 +23,9 @@ use crate::{
         RpcAccountInfoConfig, RpcBlockConfig, RpcBlockProductionConfig, RpcContextConfig, RpcEpochConfig,
         RpcGetVoteAccountsConfig, RpcLargestAccountsConfig, RpcLeaderScheduleConfig, RpcProgramAccountsConfig,
         RpcSendTransactionConfig, RpcSignatureStatusConfig, RpcSignaturesForAddressConfig,
-        RpcSimulateTransactionConfig, RpcSupplyConfig, RpcTokenAccountsFilter, RpcTransactionConfig, Signature, Slot,
-        Transaction, TransactionStatus, UiAccount, UiConfirmedBlock, UiTokenAmount, UiTransactionEncoding,
-        UnixTimestamp,
+        RpcSimulateTransactionConfig, RpcStatusInfo, RpcSupplyConfig, RpcTokenAccountsFilter, RpcTransactionConfig,
+        Signature, Slot, Transaction, TransactionStatus, UiAccount, UiConfirmedBlock, UiTokenAmount,
+        UiTransactionEncoding, UnixTimestamp,
     },
 };
 
@@ -303,7 +303,8 @@ impl RpcClient {
         }
     }
     pub async fn get_status(&self) -> RpcResult<RpcStatusInfo> {
-        self.call(RpcRequest::GetStatus, (), Some(128)).await?;
+        let response: JsonRpcResponse<RpcStatusInfo> = self.call(RpcRequest::GetStatus, (), Some(128)).await?;
+        response.into_rpc_result()
     }
 
     /// Processes the result of an RPC method call by handling consistent and inconsistent responses

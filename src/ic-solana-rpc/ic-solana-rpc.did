@@ -1,45 +1,5 @@
-type AccountKey = record {
-  writable : bool;
-  source : opt AccountKeySource;
-  pubkey : text;
-  signer : bool;
-};
-type AccountKeySource = variant { Transaction; LookupTable };
 type Auth = variant { RegisterProvider; Manage };
-type CommitmentConfig = record { commitment : CommitmentLevel };
-type CommitmentLevel = variant { Finalized; Confirmed; Processed };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
-type EncodedConfirmedTransactionWithStatusMeta = record {
-  transaction : EncodedTransactionWithStatusMeta;
-  slot : nat64;
-  blockTime : opt int64;
-};
-type EncodedTransaction = variant {
-  json : UiTransaction;
-  accounts : UiAccountsList;
-  legacyBinary : text;
-  binary : record { text; TransactionBinaryEncoding };
-};
-type EncodedTransactionWithStatusMeta = record {
-  meta : opt UiTransactionStatusMeta;
-  transaction : EncodedTransaction;
-  version : opt TransactionVersion;
-};
-type EpochInfo = record {
-  slotsInEpoch : nat64;
-  epoch : nat64;
-  slotIndex : nat64;
-  blockHeight : nat64;
-  absoluteSlot : nat64;
-  transactionCount : opt nat64;
-};
-type EpochSchedule = record {
-  firstNormalEpoch : nat64;
-  leaderScheduleSlotOffset : nat64;
-  firstNormalSlot : nat64;
-  slotsPerEpoch : nat64;
-  warmup : bool;
-};
 type HttpHeader = record { value : text; name : text };
 type HttpRequest = record {
   url : text;
@@ -53,81 +13,7 @@ type HttpResponse = record {
   status_code : nat16;
 };
 type InitArgs = record { managers : opt vec principal; demo : opt bool };
-type InstructionError = variant {
-  ModifiedProgramId;
-  CallDepth;
-  Immutable;
-  GenericError;
-  ExecutableAccountNotRentExempt;
-  IncorrectAuthority;
-  PrivilegeEscalation;
-  ReentrancyNotAllowed;
-  InvalidInstructionData;
-  RentEpochModified;
-  IllegalOwner;
-  ComputationalBudgetExceeded;
-  ExecutableDataModified;
-  ExecutableLamportChange;
-  UnbalancedInstruction;
-  ProgramEnvironmentSetupFailure;
-  IncorrectProgramId;
-  UnsupportedSysvar;
-  UnsupportedProgramId;
-  AccountDataTooSmall;
-  NotEnoughAccountKeys;
-  AccountBorrowFailed;
-  InvalidRealloc;
-  AccountNotExecutable;
-  AccountNotRentExempt;
-  Custom : nat32;
-  AccountDataSizeChanged;
-  MaxAccountsDataAllocationsExceeded;
-  ExternalAccountLamportSpend;
-  ExternalAccountDataModified;
-  MissingAccount;
-  ProgramFailedToComplete;
-  MaxInstructionTraceLengthExceeded;
-  InvalidAccountData;
-  ProgramFailedToCompile;
-  ExecutableModified;
-  InvalidAccountOwner;
-  MaxSeedLengthExceeded;
-  AccountAlreadyInitialized;
-  AccountBorrowOutstanding;
-  ReadonlyDataModified;
-  UninitializedAccount;
-  InvalidArgument;
-  BorshIoError : text;
-  BuiltinProgramsMustConsumeComputeUnits;
-  MissingRequiredSignature;
-  DuplicateAccountOutOfSync;
-  MaxAccountsExceeded;
-  ArithmeticOverflow;
-  InvalidError;
-  InvalidSeeds;
-  DuplicateAccountIndex;
-  ReadonlyLamportChange;
-  InsufficientFunds;
-};
 type JsonRpcError = record { code : int64; message : text };
-type Legacy = variant { legacy };
-type Memcmp = record {
-  encoding : opt MemcmpEncoding;
-  offset : nat64;
-  bytes : MemcmpEncodedBytes;
-};
-type MemcmpEncodedBytes = variant {
-  Binary : text;
-  Bytes : blob;
-  Base58 : text;
-  Base64 : text;
-};
-type MemcmpEncoding = variant { Binary };
-type MessageHeader = record {
-  numReadonlySignedAccounts : nat8;
-  numRequiredSignatures : nat8;
-  numReadonlyUnsignedAccounts : nat8;
-};
 type Metrics = record {
   cyclesWithdrawn : nat;
   errUnauthorized : vec record { text; nat };
@@ -140,13 +26,19 @@ type Metrics = record {
   errHttpOutcall : vec record { record { text; text }; nat64 };
   errHostNotAllowed : vec record { text; nat64 };
 };
-type ParsedAccount = record { space : nat64; parsed : text; program : text };
-type ParsedInstruction = record {
-  stackHeight : opt nat32;
-  programId : text;
-  parsed : blob;
-  program : text;
+type NodeInfo = record {
+  id : text;
+  other : OtherInfo;
+  listen_addr : text;
+  network : text;
+  channels : text;
+  version : text;
+  moniker : text;
+  protocol_version : ProtocolVersion;
 };
+type OtherInfo = record { tx_index : text; rpc_address : text };
+type ProtocolVersion = record { app : text; p2p : text; block : text };
+type PubKey = record { value : text; "type" : text };
 type RegisterProviderArgs = record {
   id : text;
   url : text;
@@ -162,68 +54,8 @@ type RejectionCode = variant {
   CanisterReject;
 };
 type Result = variant { Ok : text; Err : RpcError };
-type Result_1 = variant { Ok : opt UiAccount; Err : RpcError };
-type Result_10 = variant { Ok : EpochInfo; Err : RpcError };
-type Result_11 = variant { Ok : EpochSchedule; Err : RpcError };
-type Result_12 = variant { Ok : RpcSnapshotSlotInfo; Err : RpcError };
-type Result_13 = variant { Ok : RpcIdentity; Err : RpcError };
-type Result_14 = variant { Ok : RpcInflationGovernor; Err : RpcError };
-type Result_15 = variant { Ok : RpcInflationRate; Err : RpcError };
-type Result_16 = variant { Ok : vec opt RpcInflationReward; Err : RpcError };
-type Result_17 = variant { Ok : vec RpcAccountBalance; Err : RpcError };
-type Result_18 = variant { Ok : RpcBlockhash; Err : RpcError };
-type Result_19 = variant {
-  Ok : vec record { text; vec nat64 };
-  Err : RpcError;
-};
-type Result_2 = variant { Ok : nat64; Err : RpcError };
-type Result_20 = variant {
-  Ok : opt EncodedConfirmedTransactionWithStatusMeta;
-  Err : RpcError;
-};
-type Result_21 = variant {
-  Ok : vec record { text; Result_20 };
-  Err : RpcError;
-};
-type Result_22 = variant { Ok : vec UiAccount; Err : RpcError };
-type Result_23 = variant { Ok : vec RpcKeyedAccount; Err : RpcError };
-type Result_24 = variant { Ok : vec RpcPerfSample; Err : RpcError };
-type Result_25 = variant { Ok : vec RpcPrioritizationFee; Err : RpcError };
-type Result_26 = variant { Ok : vec opt TransactionStatus; Err : RpcError };
-type Result_27 = variant {
-  Ok : vec RpcConfirmedTransactionStatusWithSignature;
-  Err : RpcError;
-};
-type Result_28 = variant { Ok : vec text; Err : RpcError };
-type Result_29 = variant { Ok : RpcSupply; Err : RpcError };
-type Result_3 = variant { Ok; Err : TransactionError };
-type Result_30 = variant { Ok : UiTokenAmount; Err : RpcError };
-type Result_31 = variant { Ok : vec RpcTokenAccountBalance; Err : RpcError };
-type Result_32 = variant { Ok : RpcVersionInfo; Err : RpcError };
-type Result_33 = variant { Ok : RpcVoteAccountStatus; Err : RpcError };
-type Result_34 = variant { Ok : bool; Err : RpcError };
-type Result_35 = variant { Ok : RpcSimulateTransactionResult; Err : RpcError };
-type Result_4 = variant { Ok : UiConfirmedBlock; Err : RpcError };
-type Result_5 = variant { Ok : RpcBlockCommitment; Err : RpcError };
-type Result_6 = variant { Ok : RpcBlockProduction; Err : RpcError };
-type Result_7 = variant { Ok : int64; Err : RpcError };
-type Result_8 = variant { Ok : vec nat64; Err : RpcError };
-type Result_9 = variant { Ok : vec RpcContactInfo; Err : RpcError };
-type Reward = record {
-  lamports : int64;
-  postBalance : nat64;
-  commission : opt nat8;
-  pubkey : text;
-  rewardType : opt RewardType;
-};
-type RewardType = variant { Fee; Rent; Voting; Staking };
-type RpcAccountBalance = record { lamports : nat64; address : text };
-type RpcAccountInfoConfig = record {
-  encoding : opt UiAccountEncoding;
-  dataSlice : opt UiDataSliceConfig;
-  minContextSlot : opt nat64;
-  commitment : opt CommitmentLevel;
-};
+type Result_1 = variant { Ok : bool; Err : RpcError };
+type Result_2 = variant { Ok : RpcStatusInfo; Err : RpcError };
 type RpcApi = record { network : text; headers : opt vec HttpHeader };
 type RpcAuth = variant {
   QueryParam : HttpHeader;
@@ -231,62 +63,9 @@ type RpcAuth = variant {
   PathSegment : record { segment : text };
   HeaderParam : HttpHeader;
 };
-type RpcBlockCommitment = record {
-  totalStake : nat64;
-  commitment : opt vec nat64;
-};
-type RpcBlockConfig = record {
-  maxSupportedTransactionVersion : opt nat8;
-  encoding : opt UiTransactionEncoding;
-  transactionDetails : opt TransactionDetails;
-  rewards : opt bool;
-  commitment : opt CommitmentLevel;
-};
-type RpcBlockProduction = record {
-  byIdentity : vec record { text; record { nat64; nat64 } };
-  range : RpcBlockProductionRange;
-};
-type RpcBlockProductionConfig = record {
-  identity : opt text;
-  range : opt RpcBlockProductionRange;
-  commitment : opt CommitmentLevel;
-};
-type RpcBlockProductionRange = record {
-  firstSlot : nat64;
-  lastSlot : opt nat64;
-};
-type RpcBlockhash = record { lastValidBlockHeight : nat64; blockhash : text };
 type RpcConfig = record {
   responseConsensus : opt ConsensusStrategy;
   responseSizeEstimate : opt nat64;
-};
-type RpcConfirmedTransactionStatusWithSignature = record {
-  err : opt TransactionError;
-  signature : text;
-  confirmationStatus : opt TransactionConfirmationStatus;
-  memo : opt text;
-  slot : nat64;
-  blockTime : opt int64;
-};
-type RpcContactInfo = record {
-  rpc : opt text;
-  tpu : opt text;
-  feature_set : opt nat32;
-  gossip : opt text;
-  pubkey : text;
-  pubsub : opt text;
-  shred_version : opt nat16;
-  version : opt text;
-  tpu_quic : opt text;
-};
-type RpcContextConfig = record {
-  minContextSlot : opt nat64;
-  commitment : opt CommitmentLevel;
-};
-type RpcEpochConfig = record {
-  epoch : opt nat64;
-  minContextSlot : opt nat64;
-  commitment : opt CommitmentLevel;
 };
 type RpcError = variant {
   JsonRpcError : JsonRpcError;
@@ -296,71 +75,6 @@ type RpcError = variant {
   HttpOutcallError : record { code : RejectionCode; message : text };
   ParseError : text;
 };
-type RpcFilterType = variant {
-  TokenAccountState;
-  Memcmp : Memcmp;
-  DataSize : nat64;
-};
-type RpcGetVoteAccountsConfig = record {
-  votePubkey : opt text;
-  delinquentSlotDistance : opt nat64;
-  keepUnstakedDelinquents : opt bool;
-  commitment : opt CommitmentLevel;
-};
-type RpcIdentity = record { identity : text };
-type RpcInflationGovernor = record {
-  taper : float64;
-  foundationTerm : float64;
-  foundation : float64;
-  initial : float64;
-  terminal : float64;
-};
-type RpcInflationRate = record {
-  total : float64;
-  foundation : float64;
-  validator : float64;
-  epoch : nat64;
-};
-type RpcInflationReward = record {
-  effectiveSlot : nat64;
-  postBalance : nat64;
-  commission : opt nat8;
-  epoch : nat64;
-  amount : nat64;
-};
-type RpcKeyedAccount = record { pubkey : text; account : UiAccount };
-type RpcLargestAccountsConfig = record {
-  filter : opt RpcLargestAccountsFilter;
-  commitment : opt CommitmentLevel;
-};
-type RpcLargestAccountsFilter = variant { NonCirculating; Circulating };
-type RpcLeaderScheduleConfig = record {
-  identity : opt text;
-  commitment : opt CommitmentLevel;
-};
-type RpcPerfSample = record {
-  numNonVoteTransactions : opt nat64;
-  numSlots : nat64;
-  numTransactions : nat64;
-  slot : nat64;
-  samplePeriodSecs : nat16;
-};
-type RpcPrioritizationFee = record { prioritizationFee : nat64; slot : nat64 };
-type RpcProgramAccountsConfig = record {
-  filters : opt vec RpcFilterType;
-  encoding : opt UiAccountEncoding;
-  withContext : opt bool;
-  dataSlice : opt UiDataSliceConfig;
-  minContextSlot : opt nat64;
-  commitment : opt CommitmentLevel;
-};
-type RpcSendTransactionConfig = record {
-  encoding : opt UiTransactionEncoding;
-  preflightCommitment : opt CommitmentLevel;
-  maxRetries : opt nat64;
-  minContextSlot : opt nat64;
-  skipPreflight : bool;
-};
 type RpcServices = variant {
   Mainnet;
   Custom : vec RpcApi;
@@ -369,264 +83,31 @@ type RpcServices = variant {
   Localnet;
   Provider : vec text;
 };
-type RpcSignatureStatusConfig = record { searchTransactionHistory : bool };
-type RpcSignaturesForAddressConfig = record {
-  limit : opt nat64;
-  before : opt text;
-  until : opt text;
-  minContextSlot : opt nat64;
-  commitment : opt CommitmentLevel;
+type RpcStatusInfo = record {
+  node_info : NodeInfo;
+  sync_info : SyncInfo;
+  validator_info : ValidatorInfo;
 };
-type RpcSimulateTransactionAccountsConfig = record {
-  encoding : opt UiAccountEncoding;
-  addresses : vec text;
-};
-type RpcSimulateTransactionConfig = record {
-  replaceRecentBlockhash : bool;
-  encoding : opt UiTransactionEncoding;
-  innerInstructions : bool;
-  accounts : opt RpcSimulateTransactionAccountsConfig;
-  sigVerify : bool;
-  minContextSlot : opt nat64;
-  commitment : opt CommitmentLevel;
-};
-type RpcSimulateTransactionResult = record {
-  err : opt TransactionError;
-  logs : opt vec text;
-  unitsConsumed : opt nat64;
-  innerInstructions : opt vec UiInnerInstructions;
-  accounts : opt vec opt UiAccount;
-  returnData : opt UiTransactionReturnData;
-};
-type RpcSnapshotSlotInfo = record { full : nat64; incremental : opt nat64 };
-type RpcSupply = record {
-  total : nat64;
-  circulating : nat64;
-  nonCirculating : nat64;
-  nonCirculatingAccounts : vec text;
-};
-type RpcSupplyConfig = record {
-  excludeNonCirculatingAccountsList : bool;
-  commitment : opt CommitmentLevel;
-};
-type RpcTokenAccountBalance = record {
-  decimals : nat8;
-  uiAmount : opt float64;
-  address : text;
-  uiAmountString : text;
-  amount : text;
-};
-type RpcTokenAccountsFilter = variant { mint : text; programId : text };
-type RpcTransactionConfig = record {
-  maxSupportedTransactionVersion : opt nat8;
-  encoding : opt UiTransactionEncoding;
-  commitment : opt CommitmentLevel;
-};
-type RpcVersionInfo = record {
-  "solana-core" : text;
-  "feature-set" : opt nat32;
-};
-type RpcVoteAccountInfo = record {
-  votePubkey : text;
-  epochVoteAccount : bool;
-  activatedStake : nat64;
-  commission : nat8;
-  epochCredits : vec record { nat64; nat64; nat64 };
-  nodePubkey : text;
-  lastVote : nat64;
-  rootSlot : nat64;
-};
-type RpcVoteAccountStatus = record {
-  current : vec RpcVoteAccountInfo;
-  delinquent : vec RpcVoteAccountInfo;
-};
-type TransactionBinaryEncoding = variant { base58; base64 };
-type TransactionConfirmationStatus = variant {
-  finalized;
-  confirmed;
-  processed;
-};
-type TransactionDetails = variant { full; none; accounts; signatures };
-type TransactionError = variant {
-  InvalidAccountForFee;
-  AddressLookupTableNotFound;
-  MissingSignatureForFee;
-  WouldExceedAccountDataBlockLimit;
-  AccountInUse;
-  DuplicateInstruction : nat8;
-  AccountNotFound;
-  TooManyAccountLocks;
-  InvalidAccountIndex;
-  AlreadyProcessed;
-  WouldExceedAccountDataTotalLimit;
-  InvalidAddressLookupTableIndex;
-  SanitizeFailure;
-  ResanitizationNeeded;
-  InvalidRentPayingAccount;
-  MaxLoadedAccountsDataSizeExceeded;
-  InvalidAddressLookupTableData;
-  InvalidWritableAccount;
-  WouldExceedMaxAccountCostLimit;
-  InvalidLoadedAccountsDataSizeLimit;
-  InvalidProgramForExecution;
-  InstructionError : record { nat8; InstructionError };
-  InsufficientFundsForRent : record { account_index : nat8 };
-  UnsupportedVersion;
-  ClusterMaintenance;
-  WouldExceedMaxVoteCostLimit;
-  SignatureFailure;
-  ProgramAccountNotFound;
-  AccountLoadedTwice;
-  ProgramExecutionTemporarilyRestricted : record { account_index : nat8 };
-  AccountBorrowOutstanding;
-  WouldExceedMaxBlockCostLimit;
-  InvalidAddressLookupTableOwner;
-  InsufficientFundsForFee;
-  CallChainTooDeep;
-  UnbalancedTransaction;
-  BlockhashNotFound;
-};
-type TransactionStatus = record {
-  err : opt TransactionError;
-  confirmations : opt nat64;
-  status : Result_3;
-  confirmationStatus : opt TransactionConfirmationStatus;
-  slot : nat64;
-};
-type TransactionVersion = variant { legacy : Legacy; number : nat8 };
-type UiAccount = record {
-  executable : bool;
-  owner : text;
-  lamports : nat64;
-  data : UiAccountData;
-  space : opt nat64;
-  rentEpoch : nat64;
-};
-type UiAccountData = variant {
-  json : ParsedAccount;
-  legacyBinary : text;
-  binary : record { text; UiAccountEncoding };
-};
-type UiAccountEncoding = variant {
-  "base64+zstd";
-  jsonParsed;
-  base58;
-  base64;
-  binary;
-};
-type UiAccountsList = record {
-  accountKeys : vec AccountKey;
-  signatures : vec text;
-};
-type UiAddressTableLookup = record {
-  accountKey : text;
-  writableIndexes : blob;
-  readonlyIndexes : blob;
-};
-type UiCompiledInstruction = record {
-  data : text;
-  accounts : blob;
-  programIdIndex : nat8;
-  stackHeight : opt nat32;
-};
-type UiConfirmedBlock = record {
-  blockTime : opt int64;
-  blockhash : text;
-  blockHeight : opt nat64;
-  signatures : opt vec text;
-  rewards : opt vec Reward;
-  transactions : opt vec EncodedTransactionWithStatusMeta;
-  numRewardPartitions : opt nat64;
-  previousBlockhash : text;
-  parentSlot : nat64;
-};
-type UiDataSliceConfig = record { offset : nat64; length : nat64 };
-type UiInnerInstructions = record {
-  instructions : vec UiInstruction;
-  index : nat8;
-};
-type UiInstruction = variant {
-  compiled : UiCompiledInstruction;
-  parsed : UiParsedInstruction;
-};
-type UiInstruction_1 = variant {
-  Parsed : UiParsedInstruction_1;
-  Compiled : UiCompiledInstruction;
-};
-type UiLoadedAddresses = record { writable : vec text; readonly : vec text };
-type UiMessage = variant { raw : UiRawMessage; parsed : UiParsedMessage };
-type UiParsedInstruction = variant {
-  partiallyDecoded : UiPartiallyDecodedInstruction;
-  parsed : ParsedInstruction;
-};
-type UiParsedInstruction_1 = variant {
-  Parsed : ParsedInstruction;
-  PartiallyDecoded : UiPartiallyDecodedInstruction;
-};
-type UiParsedMessage = record {
-  addressTableLookups : opt vec UiAddressTableLookup;
-  instructions : vec UiInstruction_1;
-  accountKeys : vec AccountKey;
-  recentBlockhash : text;
-};
-type UiPartiallyDecodedInstruction = record {
-  data : text;
-  accounts : vec text;
-  stackHeight : opt nat32;
-  programId : text;
-};
-type UiRawMessage = record {
-  addressTableLookups : opt vec UiAddressTableLookup;
-  instructions : vec UiCompiledInstruction;
-  accountKeys : vec text;
-  recentBlockhash : text;
-  header : MessageHeader;
-};
-type UiReturnDataEncoding = variant { base64 };
-type UiTokenAmount = record {
-  decimals : nat8;
-  uiAmount : opt float64;
-  uiAmountString : text;
-  amount : text;
-};
-type UiTransaction = record { message : UiMessage; signatures : vec text };
-type UiTransactionEncoding = variant {
-  jsonParsed;
-  json;
-  base58;
-  base64;
-  binary;
-};
-type UiTransactionReturnData = record {
-  data : record { text; UiReturnDataEncoding };
-  programId : text;
-};
-type UiTransactionStatusMeta = record {
-  err : opt TransactionError;
-  fee : nat64;
-  status : Result_3;
-  preBalances : vec nat64;
-  postTokenBalances : opt vec UiTransactionTokenBalance;
-  innerInstructions : opt vec UiInnerInstructions;
-  postBalances : vec nat64;
-  loadedAddresses : opt UiLoadedAddresses;
-  rewards : opt vec Reward;
-  logMessages : opt vec text;
-  returnData : opt UiTransactionReturnData;
-  preTokenBalances : opt vec UiTransactionTokenBalance;
-  computeUnitsConsumed : opt nat64;
-};
-type UiTransactionTokenBalance = record {
-  uiTokenAmount : UiTokenAmount;
-  owner : opt text;
-  accountIndex : nat8;
-  mint : text;
-  programId : opt text;
+type SyncInfo = record {
+  earliest_app_hash : text;
+  latest_app_hash : text;
+  latest_block_hash : text;
+  latest_block_time : text;
+  earliest_block_hash : text;
+  earliest_block_time : text;
+  earliest_block_height : text;
+  catching_up : bool;
+  latest_block_height : text;
 };
 type UpdateProviderArgs = record {
   id : text;
   url : opt text;
   auth : opt RpcAuth;
+};
+type ValidatorInfo = record {
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
 };
 service : (InitArgs) -> {
   authorize : (principal, Auth) -> (bool);
@@ -639,7 +120,8 @@ service : (InitArgs) -> {
   registerProvider : (RegisterProviderArgs) -> ();
   request : (RpcServices, text, text, opt nat64) -> (Result);
   requestCost : (text, nat64) -> (nat) query;
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_34);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_1);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_2);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
-};
+}

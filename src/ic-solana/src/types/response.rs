@@ -356,3 +356,81 @@ pub struct RpcPrioritizationFee {
     #[serde(rename = "prioritizationFee")]
     pub prioritization_fee: u64,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct RpcStatusInfo {
+    pub node_info: NodeInfo,
+    pub sync_info: SyncInfo,
+    pub validator_info: ValidatorInfo,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct NodeInfo {
+    pub protocol_version: ProtocolVersion,
+    pub id: String,
+    pub listen_addr: String,
+    pub network: String,
+    pub version: String,
+    pub channels: String,
+    pub moniker: String,
+    pub other: OtherInfo,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct ProtocolVersion {
+    pub p2p: String,
+    pub block: String,
+    pub app: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct OtherInfo {
+    #[serde(rename = "tx_index")]
+    pub tx_index: String,
+    #[serde(rename = "rpc_address")]
+    pub rpc_address: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct SyncInfo {
+    #[serde(rename = "latest_block_hash")]
+    pub latest_block_hash: String,
+    #[serde(rename = "latest_app_hash")]
+    pub latest_app_hash: String,
+    #[serde(rename = "latest_block_height")]
+    pub latest_block_height: String,
+    #[serde(rename = "latest_block_time")]
+    pub latest_block_time: String,
+    #[serde(rename = "earliest_block_hash")]
+    pub earliest_block_hash: String,
+    #[serde(rename = "earliest_app_hash")]
+    pub earliest_app_hash: String,
+    #[serde(rename = "earliest_block_height")]
+    pub earliest_block_height: String,
+    #[serde(rename = "earliest_block_time")]
+    pub earliest_block_time: String,
+    #[serde(rename = "catching_up")]
+    pub catching_up: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct ValidatorInfo {
+    pub address: String,
+    pub pub_key: PubKey,
+    #[serde(rename = "voting_power")]
+    pub voting_power: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct PubKey {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub value: String,
+}
