@@ -434,39 +434,3 @@ pub struct PubKey {
     pub type_field: String,
     pub value: String,
 }
-
-/// Represents the ABCI info response from a Cosmos node.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
-#[serde(rename_all = "snake_case")]
-pub struct RpcAbciInfo {
-    /// The ABCI response containing node information
-    pub response: AbciResponse,
-}
-
-/// The ABCI response containing detailed node information
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
-#[serde(rename_all = "snake_case")]
-pub struct AbciResponse {
-    /// The application data, typically a JSON string containing application-specific information
-    /// Example: "GaiaApp"
-    pub data: String,
-
-    /// The version of the ABCI implementation
-    /// Example: "v23.3.0"
-    pub version: String,
-
-    /// The version of the application (optional)
-    /// Example: "21"
-    #[serde(rename = "app_version")]
-    pub app_version: Option<String>,
-
-    /// The height of the last committed block
-    /// Example: "25843351"
-    #[serde(rename = "last_block_height")]
-    pub last_block_height: String,
-
-    /// The application hash of the last committed block
-    /// Example: "dv05na4WO+llwdJwffRZQl9rnELFSfjY4AQrV81SWD8="
-    #[serde(rename = "last_block_app_hash")]
-    pub last_block_app_hash: String,
-}
