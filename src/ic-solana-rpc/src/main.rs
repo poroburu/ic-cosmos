@@ -12,7 +12,7 @@ use ic_solana::{
     metrics::{encode_metrics, read_metrics, Metrics},
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
-    types::{CandidValue, RpcAbciInfo, RpcStatusInfo},
+    types::{AbciInfo, CandidValue, Status},
 };
 use ic_solana_rpc::{
     auth::{do_authorize, do_deauthorize, require_manage_or_controller, require_register_provider, Auth},
@@ -36,14 +36,14 @@ pub async fn sol_get_health(source: RpcServices, config: Option<RpcConfig>) -> R
 
 #[update(name = "sol_getStatus")]
 #[candid_method(rename = "sol_getStatus")]
-pub async fn sol_get_status(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<RpcStatusInfo> {
+pub async fn sol_get_status(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<Status> {
     let client = rpc_client(source, config);
     Ok(client.get_status().await?)
 }
 
 #[update(name = "sol_getAbciInfo")]
 #[candid_method(rename = "sol_getAbciInfo")]
-pub async fn sol_get_abci_info(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<RpcAbciInfo> {
+pub async fn sol_get_abci_info(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<AbciInfo> {
     let client = rpc_client(source, config);
     Ok(client.get_abci_info().await?)
 }

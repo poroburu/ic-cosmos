@@ -1,3 +1,4 @@
+type AbciInfo = record { response : AbciResponse };
 type AbciResponse = record {
   last_block_app_hash : text;
   data : text;
@@ -61,10 +62,9 @@ type RejectionCode = variant {
   CanisterReject;
 };
 type Result = variant { Ok : text; Err : RpcError };
-type Result_1 = variant { Ok : RpcAbciInfo; Err : RpcError };
+type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
 type Result_2 = variant { Ok : bool; Err : RpcError };
-type Result_3 = variant { Ok : RpcStatusInfo; Err : RpcError };
-type RpcAbciInfo = record { response : AbciResponse };
+type Result_3 = variant { Ok : Status; Err : RpcError };
 type RpcApi = record { network : text; headers : opt vec HttpHeader };
 type RpcAuth = variant {
   QueryParam : HttpHeader;
@@ -92,7 +92,7 @@ type RpcServices = variant {
   Localnet;
   Provider : vec text;
 };
-type RpcStatusInfo = record {
+type Status = record {
   node_info : NodeInfo;
   sync_info : SyncInfo;
   validator_info : ValidatorInfo;
