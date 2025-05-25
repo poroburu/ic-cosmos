@@ -16,6 +16,7 @@ candid = { workspace = true }
 flate2 = "1.0"
 futures = { workspace = true }
 getrandom = { version = "0.2", features = ["custom"] }
+hex = "0.4.3"
 ic-canister-log = { workspace = true }
 ic-cdk = { workspace = true }
 ic-crypto-ed25519 = { workspace = true }

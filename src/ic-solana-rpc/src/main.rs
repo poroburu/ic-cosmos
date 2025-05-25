@@ -76,6 +76,17 @@ pub async fn sol_get_block(source: RpcServices, config: Option<RpcConfig>, heigh
     let client = rpc_client(source, config);
     Ok(client.get_block(height).await?)
 }
+
+#[update(name = "sol_getBlockByHash")]
+#[candid_method(rename = "sol_getBlockByHash")]
+pub async fn sol_get_block_by_hash(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    hash: String,
+) -> RpcResult<BlockComplete> {
+    let client = rpc_client(source, config);
+    Ok(client.get_block_by_hash(hash).await?)
+}
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
 #[update]

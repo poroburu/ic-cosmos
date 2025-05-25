@@ -356,6 +356,7 @@ service : (InitArgs) -> {
   requestCost : (text, nat64) -> (nat) query;
   sol_getAbciInfo : (RpcServices, opt RpcConfig) -> (Result_1);
   sol_getBlock : (RpcServices, opt RpcConfig, text) -> (Result_2);
+  sol_getBlockByHash : (RpcServices, opt RpcConfig, text) -> (Result_2);
   sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_3);
   sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_4);
   sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_5);
