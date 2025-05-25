@@ -1,32 +1,18 @@
-use std::{
-    cell::RefCell,
-    collections::{BTreeSet, HashMap},
-    fmt::Debug,
-    str::FromStr,
-};
+use std::{cell::RefCell, collections::BTreeSet};
 
-use base64::{prelude::BASE64_STANDARD, Engine};
 use ic_canister_log::log;
 use ic_cdk::api::management_canister::http_request::{
     http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod, TransformContext,
 };
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::{
     add_metric_entry,
     constants::*,
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
-    types::{
-        AbciInfo, CommitmentConfig, EncodedConfirmedTransactionWithStatusMeta, Epoch, EpochInfo, EpochSchedule, Pubkey,
-        RpcAccountInfoConfig, RpcBlockConfig, RpcBlockProductionConfig, RpcContextConfig, RpcEpochConfig,
-        RpcGetVoteAccountsConfig, RpcLargestAccountsConfig, RpcLeaderScheduleConfig, RpcProgramAccountsConfig,
-        RpcSendTransactionConfig, RpcSignatureStatusConfig, RpcSignaturesForAddressConfig,
-        RpcSimulateTransactionConfig, RpcSupplyConfig, RpcTokenAccountsFilter, RpcTransactionConfig, Signature, Slot,
-        Status, Transaction, TransactionStatus, UiAccount, UiConfirmedBlock, UiTokenAmount, UiTransactionEncoding,
-        UnixTimestamp,
-    },
+    types::{AbciInfo, ConsensusState, Status},
 };
 
 mod compression;
@@ -311,6 +297,17 @@ impl RpcClient {
     /// This includes the application name, version, and last block information.
     pub async fn get_abci_info(&self) -> RpcResult<AbciInfo> {
         let response: JsonRpcResponse<AbciInfo> = self.call(RpcRequest::GetAbciInfo, (), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_consensus_state(&self) -> RpcResult<ConsensusState> {
+        let response: JsonRpcResponse<ConsensusState> = self
+            .call(
+                RpcRequest::GetConsensusState,
+                (),
+                Some(COSMOS_CONSENSUS_STATE_SIZE_ESTIMATE),
+            )
+            .await?;
         response.into_rpc_result()
     }
 

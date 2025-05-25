@@ -1,5 +1,3 @@
-use std::{collections::HashMap, str::FromStr};
-
 use candid::{candid_method, Principal};
 use ic_canisters_http_types::{
     HttpRequest as AssetHttpRequest, HttpResponse as AssetHttpResponse, HttpResponseBuilder,
@@ -12,7 +10,7 @@ use ic_solana::{
     metrics::{encode_metrics, read_metrics, Metrics},
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
-    types::{AbciInfo, CandidValue, Status},
+    types::{AbciInfo, CandidValue, ConsensusState, Status},
 };
 use ic_solana_rpc::{
     auth::{do_authorize, do_deauthorize, require_manage_or_controller, require_register_provider, Auth},
@@ -46,6 +44,13 @@ pub async fn sol_get_status(source: RpcServices, config: Option<RpcConfig>) -> R
 pub async fn sol_get_abci_info(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<AbciInfo> {
     let client = rpc_client(source, config);
     Ok(client.get_abci_info().await?)
+}
+
+#[update(name = "sol_getConsensusState")]
+#[candid_method(rename = "sol_getConsensusState")]
+pub async fn sol_get_consensus_state(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<ConsensusState> {
+    let client = rpc_client(source, config);
+    Ok(client.get_consensus_state().await?)
 }
 
 /// Sends a JSON-RPC request to a specified Solana node provider,

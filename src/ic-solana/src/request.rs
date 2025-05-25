@@ -25,6 +25,7 @@ pub enum RpcRequest {
     GetHealth,
     GetStatus,
     GetAbciInfo,
+    GetConsensusState,
 }
 
 impl fmt::Display for RpcRequest {
@@ -50,6 +51,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetHealth => "health",
             RpcRequest::GetStatus => "status",
             RpcRequest::GetAbciInfo => "abci_info",
+            RpcRequest::GetConsensusState => "consensus_state",
         };
 
         write!(f, "{method}")

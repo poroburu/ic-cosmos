@@ -40,3 +40,6 @@ pub const GET_VOTE_ACCOUNTS_SIZE_ESTIMATE: u64 = 10000;
 
 pub const MAX_GET_BLOCKS_RANGE: u64 = 500_000;
 pub const MAX_GET_SLOT_LEADERS: u64 = 5000;
+
+/// Cosmos RPC response size estimates
+pub const COSMOS_CONSENSUS_STATE_SIZE_ESTIMATE: u64 = 10000;

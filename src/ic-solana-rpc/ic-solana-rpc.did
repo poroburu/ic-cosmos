@@ -7,7 +7,15 @@ type AbciResponse = record {
   app_version : opt text;
 };
 type Auth = variant { RegisterProvider; Manage };
+type ConsensusState = record { round_state : RoundState };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
+type HeightVoteSet = record {
+  prevotes_bit_array : text;
+  precommits : vec text;
+  prevotes : vec text;
+  precommits_bit_array : text;
+  round : int32;
+};
 type HttpHeader = record { value : text; name : text };
 type HttpRequest = record {
   url : text;
@@ -45,6 +53,7 @@ type NodeInfo = record {
   protocol_version : ProtocolVersion;
 };
 type OtherInfo = record { tx_index : text; rpc_address : text };
+type Proposer = record { address : text; index : int32 };
 type ProtocolVersion = record { app : text; p2p : text; block : text };
 type PubKey = record { value : text; "type" : text };
 type RegisterProviderArgs = record {
@@ -63,8 +72,18 @@ type RejectionCode = variant {
 };
 type Result = variant { Ok : text; Err : RpcError };
 type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
-type Result_2 = variant { Ok : bool; Err : RpcError };
-type Result_3 = variant { Ok : Status; Err : RpcError };
+type Result_2 = variant { Ok : ConsensusState; Err : RpcError };
+type Result_3 = variant { Ok : bool; Err : RpcError };
+type Result_4 = variant { Ok : Status; Err : RpcError };
+type RoundState = record {
+  height_vote_set : vec HeightVoteSet;
+  "height/round/step" : text;
+  start_time : text;
+  proposal_block_hash : text;
+  proposer : Proposer;
+  valid_block_hash : text;
+  locked_block_hash : text;
+};
 type RpcApi = record { network : text; headers : opt vec HttpHeader };
 type RpcAuth = variant {
   QueryParam : HttpHeader;
@@ -130,8 +149,9 @@ service : (InitArgs) -> {
   request : (RpcServices, text, text, opt nat64) -> (Result);
   requestCost : (text, nat64) -> (nat) query;
   sol_getAbciInfo : (RpcServices, opt RpcConfig) -> (Result_1);
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_2);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_3);
+  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_2);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_3);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_4);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }
