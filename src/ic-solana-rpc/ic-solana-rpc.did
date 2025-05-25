@@ -7,8 +7,66 @@ type AbciResponse = record {
   app_version : opt text;
 };
 type Auth = variant { RegisterProvider; Manage };
+type Block = record {
+  last_commit : opt LastCommit;
+  data : vec text;
+  evidence : vec Evidence;
+  header : BlockHeader;
+};
+type BlockHeader = record {
+  height : text;
+  evidence_hash : text;
+  time : text;
+  proposer_address : text;
+  version : Version;
+  chain_id : text;
+  last_results_hash : text;
+  app_hash : text;
+  data_hash : text;
+  last_commit_hash : text;
+  last_block_id : BlockID;
+  next_validators_hash : text;
+  consensus_hash : text;
+  validators_hash : text;
+};
+type BlockID = record { hash : text; parts : BlockPartsHeader };
+type BlockParts = record { parts : vec text; header : BlockPartsHeader };
+type BlockPartsHeader = record { total : int32; hash : text };
 type ConsensusState = record { round_state : RoundState };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
+type DumpConsensusState = record {
+  round_state : DumpRoundState;
+  peers : vec PeerState;
+};
+type DumpRoundState = record {
+  height : text;
+  last_commit : opt LastCommit;
+  proposal_block : opt Block;
+  triggered_timeout_precommit : bool;
+  commit_round : int32;
+  votes : vec VoteSet;
+  step : int32;
+  valid_block_parts : opt BlockParts;
+  proposal_block_parts : opt BlockParts;
+  locked_block_parts : opt BlockParts;
+  last_validators : ValidatorSet;
+  start_time : text;
+  locked_block : opt Block;
+  valid_block : opt Block;
+  proposal : opt Proposal;
+  commit_time : text;
+  locked_round : int32;
+  valid_round : int32;
+  validators : ValidatorSet;
+  round : int32;
+};
+type Evidence = record {
+  height : int32;
+  validator : Validator;
+  time : int32;
+  "type" : text;
+  total_voting_power : int32;
+};
 type HeightVoteSet = record {
   prevotes_bit_array : text;
   precommits : vec text;
@@ -30,6 +88,11 @@ type HttpResponse = record {
 };
 type InitArgs = record { managers : opt vec principal; demo : opt bool };
 type JsonRpcError = record { code : int64; message : text };
+type LastCommit = record {
+  votes_bit_array : text;
+  votes : vec text;
+  peer_maj_23s : record {};
+};
 type Metrics = record {
   cyclesWithdrawn : nat;
   errUnauthorized : vec record { text; nat };
@@ -53,6 +116,35 @@ type NodeInfo = record {
   protocol_version : ProtocolVersion;
 };
 type OtherInfo = record { tx_index : text; rpc_address : text };
+type PeerRoundState = record {
+  height : text;
+  catchup_commit : opt text;
+  last_commit : opt text;
+  precommits : opt text;
+  prevotes : opt text;
+  step : int32;
+  proposal_block_parts : opt text;
+  proposal_pol : opt text;
+  start_time : text;
+  proposal : bool;
+  catchup_commit_round : opt int32;
+  proposal_pol_round : opt int32;
+  proposal_block_parts_header : opt BlockPartsHeader;
+  round : int32;
+  last_commit_round : opt int32;
+};
+type PeerState = record { node_address : text; peer_state : PeerStateInfo };
+type PeerStateInfo = record { round_state : PeerRoundState; stats : PeerStats };
+type PeerStats = record { block_parts : text; votes : text };
+type Proposal = record {
+  height : text;
+  signature : text;
+  block_id : BlockID;
+  "type" : bool;
+  pol_round : int32;
+  timestamp : text;
+  round : int32;
+};
 type Proposer = record { address : text; index : int32 };
 type ProtocolVersion = record { app : text; p2p : text; block : text };
 type PubKey = record { value : text; "type" : text };
@@ -73,8 +165,9 @@ type RejectionCode = variant {
 type Result = variant { Ok : text; Err : RpcError };
 type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
 type Result_2 = variant { Ok : ConsensusState; Err : RpcError };
-type Result_3 = variant { Ok : bool; Err : RpcError };
-type Result_4 = variant { Ok : Status; Err : RpcError };
+type Result_3 = variant { Ok : DumpConsensusState; Err : RpcError };
+type Result_4 = variant { Ok : bool; Err : RpcError };
+type Result_5 = variant { Ok : Status; Err : RpcError };
 type RoundState = record {
   height_vote_set : vec HeightVoteSet;
   "height/round/step" : text;
@@ -132,10 +225,33 @@ type UpdateProviderArgs = record {
   url : opt text;
   auth : opt RpcAuth;
 };
+type Validator = record {
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
 type ValidatorInfo = record {
   address : text;
   pub_key : PubKey;
   voting_power : text;
+};
+type ValidatorPriority = record {
+  proposer_priority : text;
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type ValidatorSet = record {
+  proposer : ValidatorPriority;
+  validators : vec ValidatorPriority;
+};
+type Version = record { app : text; block : text };
+type VoteSet = record {
+  prevotes_bit_array : text;
+  precommits : opt vec text;
+  prevotes : opt vec text;
+  precommits_bit_array : text;
+  round : int32;
 };
 service : (InitArgs) -> {
   authorize : (principal, Auth) -> (bool);
@@ -150,8 +266,9 @@ service : (InitArgs) -> {
   requestCost : (text, nat64) -> (nat) query;
   sol_getAbciInfo : (RpcServices, opt RpcConfig) -> (Result_1);
   sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_2);
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_3);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_4);
+  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_3);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_4);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_5);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }

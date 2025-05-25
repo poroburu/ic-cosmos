@@ -12,7 +12,7 @@ use crate::{
     constants::*,
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
-    types::{AbciInfo, ConsensusState, Status},
+    types::{AbciInfo, ConsensusState, DumpConsensusState, Status},
 };
 
 mod compression;
@@ -306,6 +306,17 @@ impl RpcClient {
                 RpcRequest::GetConsensusState,
                 (),
                 Some(COSMOS_CONSENSUS_STATE_SIZE_ESTIMATE),
+            )
+            .await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_dump_consensus_state(&self) -> RpcResult<DumpConsensusState> {
+        let response: JsonRpcResponse<DumpConsensusState> = self
+            .call(
+                RpcRequest::GetDumpConsensusState,
+                (),
+                Some(COSMOS_DUMP_CONSENSUS_STATE_SIZE_ESTIMATE),
             )
             .await?;
         response.into_rpc_result()
