@@ -13,7 +13,7 @@ use crate::{
     constants::*,
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
-    types::{AbciInfo, BlockComplete, ConsensusState, DumpConsensusState, NetInfo, Status},
+    types::{AbciInfo, BlockComplete, BlockResults, ConsensusState, DumpConsensusState, NetInfo, Status},
 };
 
 mod compression;
@@ -350,6 +350,17 @@ impl RpcClient {
                 RpcRequest::GetBlockByHash,
                 (base64_hash,),
                 Some(GET_BLOCK_SIZE_ESTIMATE),
+            )
+            .await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_block_results(&self, height: String) -> RpcResult<BlockResults> {
+        let response: JsonRpcResponse<BlockResults> = self
+            .call(
+                RpcRequest::GetBlockResults,
+                (height,),
+                Some(COSMOS_BLOCK_RESULTS_SIZE_ESTIMATE),
             )
             .await?;
         response.into_rpc_result()

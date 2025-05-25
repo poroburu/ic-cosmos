@@ -103,7 +103,7 @@ pub struct BlockParams {
     /// Maximum gas per block
     pub max_gas: String,
     /// Time interval between blocks in milliseconds
-    pub time_iota_ms: String,
+    pub time_iota_ms: Option<String>,
 }
 
 /// Represents evidence-specific consensus parameters.
@@ -111,7 +111,11 @@ pub struct BlockParams {
 #[serde(rename_all = "snake_case")]
 pub struct EvidenceParams {
     /// Maximum age of evidence in blocks
-    pub max_age: String,
+    pub max_age_num_blocks: String,
+    /// Maximum age of evidence in duration
+    pub max_age_duration: String,
+    /// Maximum bytes of evidence
+    pub max_bytes: String,
 }
 
 /// Represents validator-specific consensus parameters.

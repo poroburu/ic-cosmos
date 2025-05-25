@@ -14,6 +14,7 @@ pub enum RpcRequest {
     GetNetInfo,
     GetBlock,
     GetBlockByHash,
+    GetBlockResults,
 }
 
 impl fmt::Display for RpcRequest {
@@ -28,6 +29,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetNetInfo => "net_info",
             RpcRequest::GetBlock => "block",
             RpcRequest::GetBlockByHash => "block_by_hash",
+            RpcRequest::GetBlockResults => "block_results",
         };
 
         write!(f, "{method}")
