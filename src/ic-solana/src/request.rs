@@ -16,6 +16,7 @@ pub enum RpcRequest {
     GetBlockByHash,
     GetBlockResults,
     GetBlockchain,
+    GetCommit,
 }
 
 impl fmt::Display for RpcRequest {
@@ -32,6 +33,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetBlockByHash => "block_by_hash",
             RpcRequest::GetBlockResults => "block_results",
             RpcRequest::GetBlockchain => "blockchain",
+            RpcRequest::GetCommit => "commit",
         };
 
         write!(f, "{method}")

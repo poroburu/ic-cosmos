@@ -13,7 +13,10 @@ use crate::{
     constants::*,
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
-    types::{AbciInfo, BlockComplete, BlockResults, Blockchain, ConsensusState, DumpConsensusState, NetInfo, Status},
+    types::{
+        AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusState, DumpConsensusState, NetInfo,
+        Status,
+    },
 };
 
 mod compression;
@@ -403,6 +406,13 @@ impl RpcClient {
                 Err(RpcError::InconsistentResponse(results))
             }
         }
+    }
+
+    pub async fn get_commit(&self, height: String) -> RpcResult<CommitResult> {
+        let response: JsonRpcResponse<CommitResult> = self
+            .call(RpcRequest::GetCommit, (height,), Some(COSMOS_COMMIT_SIZE_ESTIMATE))
+            .await?;
+        response.into_rpc_result()
     }
 
     /// Calculate the max response bytes for the provided block range.

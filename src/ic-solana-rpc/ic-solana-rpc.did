@@ -82,6 +82,13 @@ type Channel = record {
   SendQueueCapacity : text;
   RecentlySent : text;
 };
+type Commit = record {
+  height : text;
+  block_id : BlockID;
+  signatures : vec Signatures;
+  round : int32;
+};
+type CommitResult = record { canonical : bool; signed_header : SignedHeader };
 type ConnectionStatus = record {
   SendMonitor : Monitor;
   Channels : vec Channel;
@@ -271,14 +278,15 @@ type RejectionCode = variant {
 };
 type Result = variant { Ok : text; Err : RpcError };
 type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
+type Result_10 = variant { Ok : Status; Err : RpcError };
 type Result_2 = variant { Ok : BlockComplete; Err : RpcError };
 type Result_3 = variant { Ok : BlockResults; Err : RpcError };
 type Result_4 = variant { Ok : Blockchain; Err : RpcError };
-type Result_5 = variant { Ok : ConsensusState; Err : RpcError };
-type Result_6 = variant { Ok : DumpConsensusState; Err : RpcError };
-type Result_7 = variant { Ok : bool; Err : RpcError };
-type Result_8 = variant { Ok : NetInfo; Err : RpcError };
-type Result_9 = variant { Ok : Status; Err : RpcError };
+type Result_5 = variant { Ok : CommitResult; Err : RpcError };
+type Result_6 = variant { Ok : ConsensusState; Err : RpcError };
+type Result_7 = variant { Ok : DumpConsensusState; Err : RpcError };
+type Result_8 = variant { Ok : bool; Err : RpcError };
+type Result_9 = variant { Ok : NetInfo; Err : RpcError };
 type RoundState = record {
   height_vote_set : vec HeightVoteSet;
   "height/round/step" : text;
@@ -321,6 +329,7 @@ type Signatures = record {
   validator_address : text;
   timestamp : text;
 };
+type SignedHeader = record { commit : Commit; header : BlockHeader };
 type Status = record {
   node_info : NodeInfo;
   sync_info : SyncInfo;
@@ -404,11 +413,12 @@ service : (InitArgs) -> {
   sol_getBlockByHash : (RpcServices, opt RpcConfig, text) -> (Result_2);
   sol_getBlockResults : (RpcServices, opt RpcConfig, text) -> (Result_3);
   sol_getBlockchain : (RpcServices, opt RpcConfig, text, text) -> (Result_4);
-  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_5);
-  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_6);
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_7);
-  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_8);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_9);
+  sol_getCommit : (RpcServices, opt RpcConfig, text) -> (Result_5);
+  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_6);
+  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_7);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_8);
+  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_9);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_10);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }
