@@ -1,6 +1,8 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
+use super::cosmos_common::NodeInfo;
+
 /// Represents the complete status response from a Cosmos node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
 #[serde(rename_all = "snake_case")]
@@ -25,28 +27,6 @@ pub struct Status {
     pub validator_info: ValidatorInfo,
 }
 
-/// Represents detailed information about a node.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
-#[serde(rename_all = "snake_case")]
-pub struct NodeInfo {
-    /// Protocol version information
-    pub protocol_version: ProtocolVersion,
-    /// Node's unique identifier
-    pub id: String,
-    /// Address the node is listening on
-    pub listen_addr: String,
-    /// Network identifier
-    pub network: String,
-    /// Node's software version
-    pub version: String,
-    /// Node's communication channels
-    pub channels: String,
-    /// Node's moniker (human-readable name)
-    pub moniker: String,
-    /// Additional node information
-    pub other: OtherInfo,
-}
-
 /// Represents protocol version information for different components.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
 #[serde(rename_all = "snake_case")]
@@ -57,18 +37,6 @@ pub struct ProtocolVersion {
     pub block: String,
     /// Application protocol version
     pub app: String,
-}
-
-/// Represents additional node information.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
-#[serde(rename_all = "snake_case")]
-pub struct OtherInfo {
-    /// Transaction index status
-    #[serde(rename = "tx_index")]
-    pub tx_index: String,
-    /// RPC address
-    #[serde(rename = "rpc_address")]
-    pub rpc_address: String,
 }
 
 /// Represents synchronization information for the node.

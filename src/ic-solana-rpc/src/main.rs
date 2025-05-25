@@ -10,7 +10,7 @@ use ic_solana::{
     metrics::{encode_metrics, read_metrics, Metrics},
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
-    types::{AbciInfo, CandidValue, ConsensusState, DumpConsensusState, Status},
+    types::{AbciInfo, CandidValue, ConsensusState, DumpConsensusState, NetInfo, Status},
 };
 use ic_solana_rpc::{
     auth::{do_authorize, do_deauthorize, require_manage_or_controller, require_register_provider, Auth},
@@ -61,6 +61,13 @@ pub async fn sol_get_dump_consensus_state(
 ) -> RpcResult<DumpConsensusState> {
     let client = rpc_client(source, config);
     Ok(client.get_dump_consensus_state().await?)
+}
+
+#[update(name = "sol_getNetInfo")]
+#[candid_method(rename = "sol_getNetInfo")]
+pub async fn sol_get_net_info(source: RpcServices, config: Option<RpcConfig>) -> RpcResult<NetInfo> {
+    let client = rpc_client(source, config);
+    Ok(client.get_net_info().await?)
 }
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.

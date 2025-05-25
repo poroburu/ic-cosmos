@@ -32,6 +32,19 @@ type BlockHeader = record {
 type BlockID = record { hash : text; parts : BlockPartsHeader };
 type BlockParts = record { parts : vec text; header : BlockPartsHeader };
 type BlockPartsHeader = record { total : int32; hash : text };
+type Channel = record {
+  ID : int32;
+  SendQueueSize : text;
+  Priority : text;
+  SendQueueCapacity : text;
+  RecentlySent : text;
+};
+type ConnectionStatus = record {
+  SendMonitor : Monitor;
+  Channels : vec Channel;
+  RecvMonitor : Monitor;
+  Duration : text;
+};
 type ConsensusState = record { round_state : RoundState };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
 type DumpConsensusState = record {
@@ -105,6 +118,27 @@ type Metrics = record {
   errHttpOutcall : vec record { record { text; text }; nat64 };
   errHostNotAllowed : vec record { text; nat64 };
 };
+type Monitor = record {
+  Start : text;
+  InstRate : text;
+  Idle : text;
+  BytesRem : text;
+  AvgRate : text;
+  Active : bool;
+  Bytes : text;
+  Samples : text;
+  Progress : int32;
+  CurRate : text;
+  TimeRem : text;
+  PeakRate : text;
+  Duration : text;
+};
+type NetInfo = record {
+  n_peers : text;
+  peers : vec Peer;
+  listeners : vec text;
+  listening : bool;
+};
 type NodeInfo = record {
   id : text;
   other : OtherInfo;
@@ -116,6 +150,12 @@ type NodeInfo = record {
   protocol_version : ProtocolVersion;
 };
 type OtherInfo = record { tx_index : text; rpc_address : text };
+type Peer = record {
+  node_info : NodeInfo;
+  connection_status : ConnectionStatus;
+  is_outbound : bool;
+  remote_ip : text;
+};
 type PeerRoundState = record {
   height : text;
   catchup_commit : opt text;
@@ -167,7 +207,8 @@ type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
 type Result_2 = variant { Ok : ConsensusState; Err : RpcError };
 type Result_3 = variant { Ok : DumpConsensusState; Err : RpcError };
 type Result_4 = variant { Ok : bool; Err : RpcError };
-type Result_5 = variant { Ok : Status; Err : RpcError };
+type Result_5 = variant { Ok : NetInfo; Err : RpcError };
+type Result_6 = variant { Ok : Status; Err : RpcError };
 type RoundState = record {
   height_vote_set : vec HeightVoteSet;
   "height/round/step" : text;
@@ -268,7 +309,8 @@ service : (InitArgs) -> {
   sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_2);
   sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_3);
   sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_4);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_5);
+  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_5);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_6);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }

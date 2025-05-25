@@ -121,3 +121,37 @@ pub struct ValidatorParams {
     /// List of allowed public key types
     pub pub_key_types: Vec<String>,
 }
+
+/// Represents detailed information about a node.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct NodeInfo {
+    /// Protocol version information
+    pub protocol_version: ProtocolVersion,
+    /// Node's unique identifier
+    pub id: String,
+    /// Address the node is listening on
+    pub listen_addr: String,
+    /// Network identifier
+    pub network: String,
+    /// Node's software version
+    pub version: String,
+    /// Node's communication channels
+    pub channels: String,
+    /// Node's moniker (human-readable name)
+    pub moniker: String,
+    /// Additional node information
+    pub other: OtherInfo,
+}
+
+/// Represents additional node information.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct OtherInfo {
+    /// Transaction index status
+    #[serde(rename = "tx_index")]
+    pub tx_index: String,
+    /// RPC address
+    #[serde(rename = "rpc_address")]
+    pub rpc_address: String,
+}
