@@ -12,6 +12,7 @@ pub enum RpcRequest {
     GetConsensusState,
     GetDumpConsensusState,
     GetNetInfo,
+    GetBlock,
 }
 
 impl fmt::Display for RpcRequest {
@@ -24,6 +25,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetConsensusState => "consensus_state",
             RpcRequest::GetDumpConsensusState => "dump_consensus_state",
             RpcRequest::GetNetInfo => "net_info",
+            RpcRequest::GetBlock => "block",
         };
 
         write!(f, "{method}")

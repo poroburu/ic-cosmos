@@ -9,10 +9,11 @@ type AbciResponse = record {
 type Auth = variant { RegisterProvider; Manage };
 type Block = record {
   last_commit : opt LastCommit;
-  data : vec text;
-  evidence : vec Evidence;
+  data : vec record { text; vec text };
+  evidence : vec record { text; vec Evidence };
   header : BlockHeader;
 };
+type BlockComplete = record { block_id : BlockID; block : Block };
 type BlockHeader = record {
   height : text;
   evidence_hash : text;
@@ -29,9 +30,31 @@ type BlockHeader = record {
   consensus_hash : text;
   validators_hash : text;
 };
-type BlockID = record { hash : text; parts : BlockPartsHeader };
-type BlockParts = record { parts : vec text; header : BlockPartsHeader };
-type BlockPartsHeader = record { total : int32; hash : text };
+type BlockHeader_1 = record {
+  height : text;
+  evidence_hash : text;
+  time : text;
+  proposer_address : text;
+  version : Version_1;
+  chain_id : text;
+  last_results_hash : text;
+  app_hash : text;
+  data_hash : text;
+  last_commit_hash : text;
+  last_block_id : BlockID;
+  next_validators_hash : text;
+  consensus_hash : text;
+  validators_hash : text;
+};
+type BlockID = record { hash : text; parts : BlockParts };
+type BlockParts = record { total : int32; hash : text };
+type BlockParts_1 = record { parts : vec text; header : BlockParts };
+type Block_1 = record {
+  last_commit : opt LastCommit_1;
+  data : vec text;
+  evidence : vec Evidence_1;
+  header : BlockHeader_1;
+};
 type Channel = record {
   ID : int32;
   SendQueueSize : text;
@@ -53,19 +76,19 @@ type DumpConsensusState = record {
 };
 type DumpRoundState = record {
   height : text;
-  last_commit : opt LastCommit;
-  proposal_block : opt Block;
+  last_commit : opt LastCommit_1;
+  proposal_block : opt Block_1;
   triggered_timeout_precommit : bool;
   commit_round : int32;
   votes : vec VoteSet;
   step : int32;
-  valid_block_parts : opt BlockParts;
-  proposal_block_parts : opt BlockParts;
-  locked_block_parts : opt BlockParts;
+  valid_block_parts : opt BlockParts_1;
+  proposal_block_parts : opt BlockParts_1;
+  locked_block_parts : opt BlockParts_1;
   last_validators : ValidatorSet;
   start_time : text;
-  locked_block : opt Block;
-  valid_block : opt Block;
+  locked_block : opt Block_1;
+  valid_block : opt Block_1;
   proposal : opt Proposal;
   commit_time : text;
   locked_round : int32;
@@ -76,6 +99,13 @@ type DumpRoundState = record {
 type Evidence = record {
   height : int32;
   validator : Validator;
+  time : int32;
+  "type" : text;
+  total_voting_power : int32;
+};
+type Evidence_1 = record {
+  height : int32;
+  validator : Validator_1;
   time : int32;
   "type" : text;
   total_voting_power : int32;
@@ -102,6 +132,12 @@ type HttpResponse = record {
 type InitArgs = record { managers : opt vec principal; demo : opt bool };
 type JsonRpcError = record { code : int64; message : text };
 type LastCommit = record {
+  height : text;
+  block_id : BlockID;
+  signatures : vec Signatures;
+  round : int32;
+};
+type LastCommit_1 = record {
   votes_bit_array : text;
   votes : vec text;
   peer_maj_23s : record {};
@@ -169,7 +205,7 @@ type PeerRoundState = record {
   proposal : bool;
   catchup_commit_round : opt int32;
   proposal_pol_round : opt int32;
-  proposal_block_parts_header : opt BlockPartsHeader;
+  proposal_block_parts_header : opt BlockParts;
   round : int32;
   last_commit_round : opt int32;
 };
@@ -204,11 +240,12 @@ type RejectionCode = variant {
 };
 type Result = variant { Ok : text; Err : RpcError };
 type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
-type Result_2 = variant { Ok : ConsensusState; Err : RpcError };
-type Result_3 = variant { Ok : DumpConsensusState; Err : RpcError };
-type Result_4 = variant { Ok : bool; Err : RpcError };
-type Result_5 = variant { Ok : NetInfo; Err : RpcError };
-type Result_6 = variant { Ok : Status; Err : RpcError };
+type Result_2 = variant { Ok : BlockComplete; Err : RpcError };
+type Result_3 = variant { Ok : ConsensusState; Err : RpcError };
+type Result_4 = variant { Ok : DumpConsensusState; Err : RpcError };
+type Result_5 = variant { Ok : bool; Err : RpcError };
+type Result_6 = variant { Ok : NetInfo; Err : RpcError };
+type Result_7 = variant { Ok : Status; Err : RpcError };
 type RoundState = record {
   height_vote_set : vec HeightVoteSet;
   "height/round/step" : text;
@@ -245,6 +282,12 @@ type RpcServices = variant {
   Localnet;
   Provider : vec text;
 };
+type Signatures = record {
+  block_id_flag : int32;
+  signature : opt text;
+  validator_address : text;
+  timestamp : text;
+};
 type Status = record {
   node_info : NodeInfo;
   sync_info : SyncInfo;
@@ -269,7 +312,7 @@ type UpdateProviderArgs = record {
 type Validator = record {
   address : text;
   pub_key : PubKey;
-  voting_power : text;
+  voting_power : int64;
 };
 type ValidatorInfo = record {
   address : text;
@@ -286,7 +329,13 @@ type ValidatorSet = record {
   proposer : ValidatorPriority;
   validators : vec ValidatorPriority;
 };
-type Version = record { app : text; block : text };
+type Validator_1 = record {
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type Version = record { app : opt text; block : text };
+type Version_1 = record { app : text; block : text };
 type VoteSet = record {
   prevotes_bit_array : text;
   precommits : opt vec text;
@@ -306,11 +355,12 @@ service : (InitArgs) -> {
   request : (RpcServices, text, text, opt nat64) -> (Result);
   requestCost : (text, nat64) -> (nat) query;
   sol_getAbciInfo : (RpcServices, opt RpcConfig) -> (Result_1);
-  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_2);
-  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_3);
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_4);
-  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_5);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_6);
+  sol_getBlock : (RpcServices, opt RpcConfig, text) -> (Result_2);
+  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_3);
+  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_4);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_5);
+  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_6);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_7);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }

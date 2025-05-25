@@ -155,3 +155,64 @@ pub struct OtherInfo {
     #[serde(rename = "rpc_address")]
     pub rpc_address: String,
 }
+
+/// Represents a block header.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct BlockHeader {
+    /// Version information
+    pub version: Version,
+    /// Chain identifier
+    pub chain_id: String,
+    /// Block height
+    pub height: String,
+    /// Block timestamp
+    pub time: String,
+    /// Last block ID
+    pub last_block_id: BlockID,
+    /// Hash of the last commit
+    pub last_commit_hash: String,
+    /// Hash of the block data
+    pub data_hash: String,
+    /// Hash of the validators
+    pub validators_hash: String,
+    /// Hash of the next validators
+    pub next_validators_hash: String,
+    /// Hash of the consensus parameters
+    pub consensus_hash: String,
+    /// Hash of the application state
+    pub app_hash: String,
+    /// Hash of the last results
+    pub last_results_hash: String,
+    /// Hash of the evidence
+    pub evidence_hash: String,
+    /// Address of the block proposer
+    pub proposer_address: String,
+}
+
+/// Represents version information for a block.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct Version {
+    /// Block version
+    pub block: String,
+    /// Application version
+    pub app: Option<String>,
+}
+
+/// Represents evidence of misbehavior.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
+#[serde(rename_all = "snake_case")]
+pub struct Evidence {
+    /// Type of evidence
+    #[serde(rename = "type")]
+    pub evidence_type: String,
+    /// Height at which the evidence was created
+    pub height: i32,
+    /// Time at which the evidence was created
+    pub time: i32,
+    /// Total voting power at the time of the evidence
+    pub total_voting_power: i32,
+    /// Validator that committed the misbehavior
+    pub validator: Validator,
+}
