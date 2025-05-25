@@ -341,12 +341,7 @@ impl RpcClient {
     }
 
     pub async fn get_block_by_hash(&self, hash: String) -> RpcResult<BlockComplete> {
-        // Remove 0x prefix if present and convert hex to base64
-        let hash = if hash.starts_with("0x") { &hash[2..] } else { &hash };
-
-        // Convert hex to bytes then to base64
-        let bytes = hex::decode(hash).map_err(|e| RpcError::ParseError(format!("Invalid hex hash: {}", e)))?;
-        let base64_hash = base64::encode(bytes);
+        let base64_hash = convert_hex_to_base64(hash)?;
 
         let response: JsonRpcResponse<BlockComplete> = self
             .call(
@@ -395,6 +390,14 @@ impl RpcClient {
 
     pub async fn get_header(&self, height: String) -> RpcResult<HeaderResult> {
         let response: JsonRpcResponse<HeaderResult> = self.call(RpcRequest::GetHeader, (height,), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_header_by_hash(&self, hash: String) -> RpcResult<HeaderResult> {
+        let hash = remove_0x_prefix(hash);
+
+        let response: JsonRpcResponse<HeaderResult> =
+            self.call(RpcRequest::GetHeaderByHash, (hash,), Some(128)).await?;
         response.into_rpc_result()
     }
 
@@ -451,6 +454,21 @@ impl RpcClient {
             .and_then(Value::as_str)
             .unwrap_or("unknown")
     }
+}
+
+fn remove_0x_prefix(hash: String) -> String {
+    if hash.starts_with("0x") {
+        hash[2..].to_string()
+    } else {
+        hash
+    }
+}
+
+fn convert_hex_to_base64(hash: String) -> Result<String, RpcError> {
+    let hash = remove_0x_prefix(hash);
+    let bytes = hex::decode(hash).map_err(|e| RpcError::ParseError(format!("Invalid hex hash: {}", e)))?;
+    let base64_hash = base64::encode(bytes);
+    Ok(base64_hash)
 }
 
 // TODO:

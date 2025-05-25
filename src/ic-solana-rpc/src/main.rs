@@ -138,6 +138,18 @@ pub async fn sol_get_header(source: RpcServices, config: Option<RpcConfig>, heig
     let client = rpc_client(source, config);
     Ok(client.get_header(height).await?)
 }
+
+#[update(name = "sol_getHeaderByHash")]
+#[candid_method(rename = "sol_getHeaderByHash")]
+pub async fn sol_get_header_by_hash(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    hash: String,
+) -> RpcResult<HeaderResult> {
+    let client = rpc_client(source, config);
+    Ok(client.get_header_by_hash(hash).await?)
+}
+
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
 #[update]

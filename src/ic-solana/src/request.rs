@@ -19,6 +19,7 @@ pub enum RpcRequest {
     GetCommit,
     GetConsensusParams,
     GetHeader,
+    GetHeaderByHash,
 }
 
 impl fmt::Display for RpcRequest {
@@ -38,6 +39,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetCommit => "commit",
             RpcRequest::GetConsensusParams => "consensus_params",
             RpcRequest::GetHeader => "header",
+            RpcRequest::GetHeaderByHash => "header_by_hash",
         };
 
         write!(f, "{method}")

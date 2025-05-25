@@ -425,6 +425,7 @@ service : (InitArgs) -> {
   sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_7);
   sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_8);
   sol_getHeader : (RpcServices, opt RpcConfig, text) -> (Result_9);
+  sol_getHeaderByHash : (RpcServices, opt RpcConfig, text) -> (Result_9);
   sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_10);
   sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_11);
   sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_12);
