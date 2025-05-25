@@ -15,7 +15,7 @@ use crate::{
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
         AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusParamsResult, ConsensusState,
-        DumpConsensusState, HeaderResult, NetInfo, Status,
+        DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status,
     },
 };
 
@@ -401,6 +401,11 @@ impl RpcClient {
         response.into_rpc_result()
     }
 
+    pub async fn get_num_unconfirmed_txs(&self) -> RpcResult<NumUnconfirmedTransactionsResult> {
+        let response: JsonRpcResponse<NumUnconfirmedTransactionsResult> =
+            self.call(RpcRequest::GetNumUnconfirmedTxs, (), Some(128)).await?;
+        response.into_rpc_result()
+    }
     /// Processes the result of an RPC method call by handling consistent and inconsistent responses
     /// from multiple providers.
     fn process_result<T: Serialize>(method: impl ToString, result: Result<T, MultiCallError<T>>) -> RpcResult<T> {

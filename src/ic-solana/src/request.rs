@@ -20,6 +20,7 @@ pub enum RpcRequest {
     GetConsensusParams,
     GetHeader,
     GetHeaderByHash,
+    GetNumUnconfirmedTxs,
 }
 
 impl fmt::Display for RpcRequest {
@@ -40,6 +41,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetConsensusParams => "consensus_params",
             RpcRequest::GetHeader => "header",
             RpcRequest::GetHeaderByHash => "header_by_hash",
+            RpcRequest::GetNumUnconfirmedTxs => "num_unconfirmed_txs",
         };
 
         write!(f, "{method}")
