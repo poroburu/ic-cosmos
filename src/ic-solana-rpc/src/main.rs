@@ -12,7 +12,7 @@ use ic_solana::{
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
         AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, CommitResult, ConsensusParamsResult,
-        ConsensusState, DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status,
+        ConsensusState, DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status, Tx,
     },
 };
 use ic_solana_rpc::{
@@ -158,6 +158,13 @@ pub async fn sol_get_num_unconfirmed_txs(
 ) -> RpcResult<NumUnconfirmedTransactionsResult> {
     let client = rpc_client(source, config);
     Ok(client.get_num_unconfirmed_txs().await?)
+}
+
+#[update(name = "sol_getTx")]
+#[candid_method(rename = "sol_getTx")]
+pub async fn sol_get_tx(source: RpcServices, config: Option<RpcConfig>, hash: String, proof: bool) -> RpcResult<Tx> {
+    let client = rpc_client(source, config);
+    Ok(client.get_tx(hash, proof).await?)
 }
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.

@@ -295,6 +295,7 @@ type Result_12 = variant {
   Err : RpcError;
 };
 type Result_13 = variant { Ok : Status; Err : RpcError };
+type Result_14 = variant { Ok : Tx; Err : RpcError };
 type Result_2 = variant { Ok : BlockComplete; Err : RpcError };
 type Result_3 = variant { Ok : BlockResults; Err : RpcError };
 type Result_4 = variant { Ok : Blockchain; Err : RpcError };
@@ -362,6 +363,13 @@ type SyncInfo = record {
   catching_up : bool;
   latest_block_height : text;
 };
+type Tx = record {
+  tx : text;
+  height : text;
+  hash : text;
+  index : int32;
+  tx_result : TxResultData;
+};
 type TxResult = record {
   log : text;
   gas_wanted : text;
@@ -370,6 +378,14 @@ type TxResult = record {
   info : text;
   codespace : text;
   events : opt vec BlockEvent;
+  gas_used : text;
+};
+type TxResultData = record {
+  log : text;
+  gas_wanted : text;
+  code : int32;
+  data : text;
+  tags : opt vec Event;
   gas_used : text;
 };
 type UpdateProviderArgs = record {
@@ -439,6 +455,7 @@ service : (InitArgs) -> {
   sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_11);
   sol_getNumUnconfirmedTxs : (RpcServices, opt RpcConfig) -> (Result_12);
   sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_13);
+  sol_getTx : (RpcServices, opt RpcConfig, text, bool) -> (Result_14);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }

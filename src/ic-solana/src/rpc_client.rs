@@ -15,7 +15,7 @@ use crate::{
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
         AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusParamsResult, ConsensusState,
-        DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status,
+        DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status, Tx,
     },
 };
 
@@ -406,6 +406,15 @@ impl RpcClient {
             self.call(RpcRequest::GetNumUnconfirmedTxs, (), Some(128)).await?;
         response.into_rpc_result()
     }
+
+    pub async fn get_tx(&self, hash: String, proof: bool) -> RpcResult<Tx> {
+        let base64_hash = convert_hex_to_base64(hash)?;
+        let response: JsonRpcResponse<Tx> = self
+            .call(RpcRequest::GetTx, (base64_hash, proof), Some(COSMOS_TX_SIZE_ESTIMATE))
+            .await?;
+        response.into_rpc_result()
+    }
+
     /// Processes the result of an RPC method call by handling consistent and inconsistent responses
     /// from multiple providers.
     fn process_result<T: Serialize>(method: impl ToString, result: Result<T, MultiCallError<T>>) -> RpcResult<T> {
