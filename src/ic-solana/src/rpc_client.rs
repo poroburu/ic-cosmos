@@ -14,8 +14,8 @@ use crate::{
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
-        AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusState, DumpConsensusState, NetInfo,
-        Status,
+        AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusParamsResult, ConsensusState,
+        DumpConsensusState, NetInfo, Status,
     },
 };
 
@@ -379,6 +379,20 @@ impl RpcClient {
             .await?;
         response.into_rpc_result()
     }
+
+    pub async fn get_commit(&self, height: String) -> RpcResult<CommitResult> {
+        let response: JsonRpcResponse<CommitResult> = self
+            .call(RpcRequest::GetCommit, (height,), Some(COSMOS_COMMIT_SIZE_ESTIMATE))
+            .await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_consensus_params(&self, height: String) -> RpcResult<ConsensusParamsResult> {
+        let response: JsonRpcResponse<ConsensusParamsResult> =
+            self.call(RpcRequest::GetConsensusParams, (height,), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
     /// Processes the result of an RPC method call by handling consistent and inconsistent responses
     /// from multiple providers.
     fn process_result<T: Serialize>(method: impl ToString, result: Result<T, MultiCallError<T>>) -> RpcResult<T> {
@@ -406,13 +420,6 @@ impl RpcClient {
                 Err(RpcError::InconsistentResponse(results))
             }
         }
-    }
-
-    pub async fn get_commit(&self, height: String) -> RpcResult<CommitResult> {
-        let response: JsonRpcResponse<CommitResult> = self
-            .call(RpcRequest::GetCommit, (height,), Some(COSMOS_COMMIT_SIZE_ESTIMATE))
-            .await?;
-        response.into_rpc_result()
     }
 
     /// Calculate the max response bytes for the provided block range.

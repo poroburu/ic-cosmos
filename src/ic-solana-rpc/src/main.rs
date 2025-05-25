@@ -11,8 +11,8 @@ use ic_solana::{
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
-        AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, CommitResult, ConsensusState,
-        DumpConsensusState, NetInfo, Status,
+        AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, CommitResult, ConsensusParamsResult,
+        ConsensusState, DumpConsensusState, NetInfo, Status,
     },
 };
 use ic_solana_rpc::{
@@ -119,6 +119,17 @@ pub async fn sol_get_blockchain(
 pub async fn sol_get_commit(source: RpcServices, config: Option<RpcConfig>, height: String) -> RpcResult<CommitResult> {
     let client = rpc_client(source, config);
     Ok(client.get_commit(height).await?)
+}
+
+#[update(name = "sol_getConsensusParams")]
+#[candid_method(rename = "sol_getConsensusParams")]
+pub async fn sol_get_consensus_params(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    height: String,
+) -> RpcResult<ConsensusParamsResult> {
+    let client = rpc_client(source, config);
+    Ok(client.get_consensus_params(height).await?)
 }
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.

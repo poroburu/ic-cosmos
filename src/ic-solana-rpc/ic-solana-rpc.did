@@ -100,6 +100,10 @@ type ConsensusParams = record {
   evidence : EvidenceParams;
   block : BlockParams;
 };
+type ConsensusParamsResult = record {
+  consensus_params : ConsensusParams;
+  block_height : text;
+};
 type ConsensusState = record { round_state : RoundState };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
 type DumpConsensusState = record {
@@ -278,15 +282,16 @@ type RejectionCode = variant {
 };
 type Result = variant { Ok : text; Err : RpcError };
 type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
-type Result_10 = variant { Ok : Status; Err : RpcError };
+type Result_10 = variant { Ok : NetInfo; Err : RpcError };
+type Result_11 = variant { Ok : Status; Err : RpcError };
 type Result_2 = variant { Ok : BlockComplete; Err : RpcError };
 type Result_3 = variant { Ok : BlockResults; Err : RpcError };
 type Result_4 = variant { Ok : Blockchain; Err : RpcError };
 type Result_5 = variant { Ok : CommitResult; Err : RpcError };
-type Result_6 = variant { Ok : ConsensusState; Err : RpcError };
-type Result_7 = variant { Ok : DumpConsensusState; Err : RpcError };
-type Result_8 = variant { Ok : bool; Err : RpcError };
-type Result_9 = variant { Ok : NetInfo; Err : RpcError };
+type Result_6 = variant { Ok : ConsensusParamsResult; Err : RpcError };
+type Result_7 = variant { Ok : ConsensusState; Err : RpcError };
+type Result_8 = variant { Ok : DumpConsensusState; Err : RpcError };
+type Result_9 = variant { Ok : bool; Err : RpcError };
 type RoundState = record {
   height_vote_set : vec HeightVoteSet;
   "height/round/step" : text;
@@ -414,11 +419,12 @@ service : (InitArgs) -> {
   sol_getBlockResults : (RpcServices, opt RpcConfig, text) -> (Result_3);
   sol_getBlockchain : (RpcServices, opt RpcConfig, text, text) -> (Result_4);
   sol_getCommit : (RpcServices, opt RpcConfig, text) -> (Result_5);
-  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_6);
-  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_7);
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_8);
-  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_9);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_10);
+  sol_getConsensusParams : (RpcServices, opt RpcConfig, text) -> (Result_6);
+  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_7);
+  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_8);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_9);
+  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_10);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_11);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }
