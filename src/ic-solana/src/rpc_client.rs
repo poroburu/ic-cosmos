@@ -15,7 +15,7 @@ use crate::{
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
         AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusParamsResult, ConsensusState,
-        DumpConsensusState, NetInfo, Status,
+        DumpConsensusState, HeaderResult, NetInfo, Status,
     },
 };
 
@@ -390,6 +390,11 @@ impl RpcClient {
     pub async fn get_consensus_params(&self, height: String) -> RpcResult<ConsensusParamsResult> {
         let response: JsonRpcResponse<ConsensusParamsResult> =
             self.call(RpcRequest::GetConsensusParams, (height,), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_header(&self, height: String) -> RpcResult<HeaderResult> {
+        let response: JsonRpcResponse<HeaderResult> = self.call(RpcRequest::GetHeader, (height,), Some(128)).await?;
         response.into_rpc_result()
     }
 

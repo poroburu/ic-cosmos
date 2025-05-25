@@ -12,7 +12,7 @@ use ic_solana::{
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
         AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, CommitResult, ConsensusParamsResult,
-        ConsensusState, DumpConsensusState, NetInfo, Status,
+        ConsensusState, DumpConsensusState, HeaderResult, NetInfo, Status,
     },
 };
 use ic_solana_rpc::{
@@ -130,6 +130,13 @@ pub async fn sol_get_consensus_params(
 ) -> RpcResult<ConsensusParamsResult> {
     let client = rpc_client(source, config);
     Ok(client.get_consensus_params(height).await?)
+}
+
+#[update(name = "sol_getHeader")]
+#[candid_method(rename = "sol_getHeader")]
+pub async fn sol_get_header(source: RpcServices, config: Option<RpcConfig>, height: String) -> RpcResult<HeaderResult> {
+    let client = rpc_client(source, config);
+    Ok(client.get_header(height).await?)
 }
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
