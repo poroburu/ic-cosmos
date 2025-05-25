@@ -13,7 +13,7 @@ use crate::{
     constants::*,
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
-    types::{AbciInfo, BlockComplete, BlockResults, ConsensusState, DumpConsensusState, NetInfo, Status},
+    types::{AbciInfo, BlockComplete, BlockResults, Blockchain, ConsensusState, DumpConsensusState, NetInfo, Status},
 };
 
 mod compression;
@@ -366,6 +366,16 @@ impl RpcClient {
         response.into_rpc_result()
     }
 
+    pub async fn get_blockchain(&self, min_height: String, max_height: String) -> RpcResult<Blockchain> {
+        let response: JsonRpcResponse<Blockchain> = self
+            .call(
+                RpcRequest::GetBlockchain,
+                (min_height, max_height),
+                Some(COSMOS_BLOCKCHAIN_SIZE_ESTIMATE),
+            )
+            .await?;
+        response.into_rpc_result()
+    }
     /// Processes the result of an RPC method call by handling consistent and inconsistent responses
     /// from multiple providers.
     fn process_result<T: Serialize>(method: impl ToString, result: Result<T, MultiCallError<T>>) -> RpcResult<T> {

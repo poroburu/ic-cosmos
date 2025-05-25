@@ -10,7 +10,10 @@ use ic_solana::{
     metrics::{encode_metrics, read_metrics, Metrics},
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
-    types::{AbciInfo, BlockComplete, BlockResults, CandidValue, ConsensusState, DumpConsensusState, NetInfo, Status},
+    types::{
+        AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, ConsensusState, DumpConsensusState, NetInfo,
+        Status,
+    },
 };
 use ic_solana_rpc::{
     auth::{do_authorize, do_deauthorize, require_manage_or_controller, require_register_provider, Auth},
@@ -97,6 +100,18 @@ pub async fn sol_get_block_results(
 ) -> RpcResult<BlockResults> {
     let client = rpc_client(source, config);
     Ok(client.get_block_results(height).await?)
+}
+
+#[update(name = "sol_getBlockchain")]
+#[candid_method(rename = "sol_getBlockchain")]
+pub async fn sol_get_blockchain(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    min_height: String,
+    max_height: String,
+) -> RpcResult<Blockchain> {
+    let client = rpc_client(source, config);
+    Ok(client.get_blockchain(min_height, max_height).await?)
 }
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
