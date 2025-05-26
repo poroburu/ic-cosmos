@@ -13,7 +13,7 @@ use ic_solana::{
     types::{
         ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CandidValue,
         CheckTxResult, CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
-        NumUnconfirmedTransactionsResult, Status, Tx,
+        NumUnconfirmedTransactionsResult, Status, Tx, ValidatorsResult,
     },
 };
 use ic_solana_rpc::{
@@ -210,6 +210,20 @@ pub async fn sol_get_broadcast_tx_sync(
     let client = rpc_client(source, config);
     Ok(client.get_broadcast_tx_sync(tx).await?)
 }
+
+#[update(name = "sol_getValidators")]
+#[candid_method(rename = "sol_getValidators")]
+pub async fn sol_get_validators(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    height: String,
+    page: String,
+    per_page: String,
+) -> RpcResult<ValidatorsResult> {
+    let client = rpc_client(source, config);
+    Ok(client.get_validators(height, page, per_page).await?)
+}
+
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
 #[update]

@@ -26,6 +26,7 @@ pub enum RpcRequest {
     GetCheckTx,
     GetBroadcastTxAsync,
     GetBroadcastTxSync,
+    GetValidators,
 }
 
 impl fmt::Display for RpcRequest {
@@ -52,6 +53,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetCheckTx => "check_tx",
             RpcRequest::GetBroadcastTxAsync => "broadcast_tx_async",
             RpcRequest::GetBroadcastTxSync => "broadcast_tx_sync",
+            RpcRequest::GetValidators => "validators",
         };
 
         write!(f, "{method}")

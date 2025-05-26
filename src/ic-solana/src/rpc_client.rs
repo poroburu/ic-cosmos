@@ -16,7 +16,7 @@ use crate::{
     types::{
         ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CheckTxResult,
         CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
-        NumUnconfirmedTransactionsResult, Status, Tx,
+        NumUnconfirmedTransactionsResult, Status, Tx, ValidatorsResult,
     },
 };
 
@@ -447,6 +447,17 @@ impl RpcClient {
     pub async fn get_broadcast_tx_sync(&self, tx: String) -> RpcResult<BroadcastTxResult> {
         let response: JsonRpcResponse<BroadcastTxResult> =
             self.call(RpcRequest::GetBroadcastTxSync, (tx,), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_validators(&self, height: String, page: String, per_page: String) -> RpcResult<ValidatorsResult> {
+        let response: JsonRpcResponse<ValidatorsResult> = self
+            .call(
+                RpcRequest::GetValidators,
+                (height, page, per_page),
+                Some(COSMOS_VALIDATORS_SIZE_ESTIMATE),
+            )
+            .await?;
         response.into_rpc_result()
     }
 

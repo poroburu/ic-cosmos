@@ -317,6 +317,7 @@ type Result_15 = variant {
 };
 type Result_16 = variant { Ok : Status; Err : RpcError };
 type Result_17 = variant { Ok : Tx; Err : RpcError };
+type Result_18 = variant { Ok : ValidatorsResult; Err : RpcError };
 type Result_2 = variant { Ok : ABCIQueryResult; Err : RpcError };
 type Result_3 = variant { Ok : BlockComplete; Err : RpcError };
 type Result_4 = variant { Ok : BlockResults; Err : RpcError };
@@ -441,6 +442,18 @@ type Validator_1 = record {
   pub_key : PubKey;
   voting_power : text;
 };
+type Validator_2 = record {
+  proposer_priority : text;
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type ValidatorsResult = record {
+  total : text;
+  count : text;
+  block_height : text;
+  validators : vec Validator_2;
+};
 type Version = record { app : opt text; block : text };
 type Version_1 = record { app : text; block : text };
 type VoteSet = record {
@@ -483,6 +496,9 @@ service : (InitArgs) -> {
   sol_getNumUnconfirmedTxs : (RpcServices, opt RpcConfig) -> (Result_15);
   sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_16);
   sol_getTx : (RpcServices, opt RpcConfig, text, bool) -> (Result_17);
+  sol_getValidators : (RpcServices, opt RpcConfig, text, text, text) -> (
+      Result_18,
+    );
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }
