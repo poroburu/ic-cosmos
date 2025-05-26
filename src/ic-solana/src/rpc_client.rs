@@ -14,8 +14,9 @@ use crate::{
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
-        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusParamsResult,
-        ConsensusState, DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status, Tx,
+        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, CheckTxResult, CommitResult,
+        ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
+        NumUnconfirmedTransactionsResult, Status, Tx,
     },
 };
 
@@ -429,6 +430,11 @@ impl RpcClient {
                 Some(COSMOS_ABCI_QUERY_SIZE_ESTIMATE),
             )
             .await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_check_tx(&self, tx: String) -> RpcResult<CheckTxResult> {
+        let response: JsonRpcResponse<CheckTxResult> = self.call(RpcRequest::GetCheckTx, (tx,), Some(128)).await?;
         response.into_rpc_result()
     }
 

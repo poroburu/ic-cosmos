@@ -23,6 +23,7 @@ pub enum RpcRequest {
     GetNumUnconfirmedTxs,
     GetTx,
     GetAbciQuery,
+    GetCheckTx,
 }
 
 impl fmt::Display for RpcRequest {
@@ -46,6 +47,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetNumUnconfirmedTxs => "num_unconfirmed_txs",
             RpcRequest::GetTx => "tx",
             RpcRequest::GetAbciQuery => "abci_query",
+            RpcRequest::GetCheckTx => "check_tx",
         };
 
         write!(f, "{method}")
