@@ -22,6 +22,7 @@ pub enum RpcRequest {
     GetHeaderByHash,
     GetNumUnconfirmedTxs,
     GetTx,
+    GetAbciQuery,
 }
 
 impl fmt::Display for RpcRequest {
@@ -44,6 +45,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetHeaderByHash => "header_by_hash",
             RpcRequest::GetNumUnconfirmedTxs => "num_unconfirmed_txs",
             RpcRequest::GetTx => "tx",
+            RpcRequest::GetAbciQuery => "abci_query",
         };
 
         write!(f, "{method}")

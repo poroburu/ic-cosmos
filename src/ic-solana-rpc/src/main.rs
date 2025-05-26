@@ -11,8 +11,9 @@ use ic_solana::{
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
-        AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, CommitResult, ConsensusParamsResult,
-        ConsensusState, DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status, Tx,
+        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, CommitResult,
+        ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
+        NumUnconfirmedTransactionsResult, Status, Tx,
     },
 };
 use ic_solana_rpc::{
@@ -166,6 +167,21 @@ pub async fn sol_get_tx(source: RpcServices, config: Option<RpcConfig>, hash: St
     let client = rpc_client(source, config);
     Ok(client.get_tx(hash, proof).await?)
 }
+
+#[update(name = "sol_getAbciQuery")]
+#[candid_method(rename = "sol_getAbciQuery")]
+pub async fn sol_get_abci_query(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    path: String,
+    data: String,
+    height: String,
+    prove: bool,
+) -> RpcResult<ABCIQueryResult> {
+    let client = rpc_client(source, config);
+    Ok(client.get_abci_query(path, data, height, prove).await?)
+}
+
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
 #[update]

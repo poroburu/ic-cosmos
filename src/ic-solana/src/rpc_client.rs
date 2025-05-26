@@ -14,8 +14,8 @@ use crate::{
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
-        AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusParamsResult, ConsensusState,
-        DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status, Tx,
+        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, CommitResult, ConsensusParamsResult,
+        ConsensusState, DumpConsensusState, HeaderResult, NetInfo, NumUnconfirmedTransactionsResult, Status, Tx,
     },
 };
 
@@ -411,6 +411,23 @@ impl RpcClient {
         let base64_hash = convert_hex_to_base64(hash)?;
         let response: JsonRpcResponse<Tx> = self
             .call(RpcRequest::GetTx, (base64_hash, proof), Some(COSMOS_TX_SIZE_ESTIMATE))
+            .await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_abci_query(
+        &self,
+        path: String,
+        data: String,
+        height: String,
+        prove: bool,
+    ) -> RpcResult<ABCIQueryResult> {
+        let response: JsonRpcResponse<ABCIQueryResult> = self
+            .call(
+                RpcRequest::GetAbciQuery,
+                (path, data, height, prove),
+                Some(COSMOS_ABCI_QUERY_SIZE_ESTIMATE),
+            )
             .await?;
         response.into_rpc_result()
     }
