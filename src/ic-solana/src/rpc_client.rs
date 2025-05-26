@@ -444,6 +444,12 @@ impl RpcClient {
         response.into_rpc_result()
     }
 
+    pub async fn get_broadcast_tx_sync(&self, tx: String) -> RpcResult<BroadcastTxResult> {
+        let response: JsonRpcResponse<BroadcastTxResult> =
+            self.call(RpcRequest::GetBroadcastTxSync, (tx,), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
     /// Processes the result of an RPC method call by handling consistent and inconsistent responses
     /// from multiple providers.
     fn process_result<T: Serialize>(method: impl ToString, result: Result<T, MultiCallError<T>>) -> RpcResult<T> {

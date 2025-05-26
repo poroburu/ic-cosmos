@@ -470,6 +470,7 @@ service : (InitArgs) -> {
   sol_getBlockResults : (RpcServices, opt RpcConfig, text) -> (Result_4);
   sol_getBlockchain : (RpcServices, opt RpcConfig, text, text) -> (Result_5);
   sol_getBroadcastTxAsync : (RpcServices, opt RpcConfig, text) -> (Result_6);
+  sol_getBroadcastTxSync : (RpcServices, opt RpcConfig, text) -> (Result_6);
   sol_getCheckTx : (RpcServices, opt RpcConfig, text) -> (Result_7);
   sol_getCommit : (RpcServices, opt RpcConfig, text) -> (Result_8);
   sol_getConsensusParams : (RpcServices, opt RpcConfig, text) -> (Result_9);

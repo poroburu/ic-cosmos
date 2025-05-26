@@ -199,6 +199,17 @@ pub async fn sol_get_broadcast_tx(
     let client = rpc_client(source, config);
     Ok(client.get_broadcast_tx_async(tx).await?)
 }
+
+#[update(name = "sol_getBroadcastTxSync")]
+#[candid_method(rename = "sol_getBroadcastTxSync")]
+pub async fn sol_get_broadcast_tx_sync(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    tx: String,
+) -> RpcResult<BroadcastTxResult> {
+    let client = rpc_client(source, config);
+    Ok(client.get_broadcast_tx_sync(tx).await?)
+}
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
 #[update]
