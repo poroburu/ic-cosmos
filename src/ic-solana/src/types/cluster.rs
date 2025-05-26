@@ -101,7 +101,7 @@ impl Cluster {
     pub fn url(&self) -> &str {
         match self {
             Cluster::Devnet => "https://api.devnet.solana.com",
-            Cluster::Testnet => "https://api.testnet.solana.com",
+            Cluster::Testnet => "https://rpc.testcosmos.directory/cosmosicsprovidertestnet",
             Cluster::Mainnet => "https://rpc.cosmos.directory/cosmoshub",
             Cluster::Localnet => "http://127.0.0.1:8899",
             Cluster::Debug => "http://34.90.18.145:8899",
