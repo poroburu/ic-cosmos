@@ -24,6 +24,7 @@ pub enum RpcRequest {
     GetTx,
     GetAbciQuery,
     GetCheckTx,
+    GetBroadcastTxAsync,
 }
 
 impl fmt::Display for RpcRequest {
@@ -48,6 +49,7 @@ impl fmt::Display for RpcRequest {
             RpcRequest::GetTx => "tx",
             RpcRequest::GetAbciQuery => "abci_query",
             RpcRequest::GetCheckTx => "check_tx",
+            RpcRequest::GetBroadcastTxAsync => "broadcast_tx_async",
         };
 
         write!(f, "{method}")

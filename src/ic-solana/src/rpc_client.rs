@@ -14,8 +14,8 @@ use crate::{
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
-        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, CheckTxResult, CommitResult,
-        ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
+        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CheckTxResult,
+        CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
         NumUnconfirmedTransactionsResult, Status, Tx,
     },
 };
@@ -435,6 +435,12 @@ impl RpcClient {
 
     pub async fn get_check_tx(&self, tx: String) -> RpcResult<CheckTxResult> {
         let response: JsonRpcResponse<CheckTxResult> = self.call(RpcRequest::GetCheckTx, (tx,), Some(128)).await?;
+        response.into_rpc_result()
+    }
+
+    pub async fn get_broadcast_tx_async(&self, tx: String) -> RpcResult<BroadcastTxResult> {
+        let response: JsonRpcResponse<BroadcastTxResult> =
+            self.call(RpcRequest::GetBroadcastTxAsync, (tx,), Some(128)).await?;
         response.into_rpc_result()
     }
 

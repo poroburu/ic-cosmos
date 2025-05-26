@@ -86,6 +86,13 @@ type Block_1 = record {
   header : BlockHeader_1;
 };
 type Blockchain = record { last_height : text; block_metas : vec BlockMeta };
+type BroadcastTxResult = record {
+  log : text;
+  code : int32;
+  data : text;
+  hash : text;
+  codespace : text;
+};
 type Channel = record {
   ID : int32;
   SendQueueSize : text;
@@ -299,24 +306,25 @@ type RejectionCode = variant {
 };
 type Result = variant { Ok : text; Err : RpcError };
 type Result_1 = variant { Ok : AbciInfo; Err : RpcError };
-type Result_10 = variant { Ok : DumpConsensusState; Err : RpcError };
-type Result_11 = variant { Ok : HeaderResult; Err : RpcError };
-type Result_12 = variant { Ok : bool; Err : RpcError };
-type Result_13 = variant { Ok : NetInfo; Err : RpcError };
-type Result_14 = variant {
+type Result_10 = variant { Ok : ConsensusState; Err : RpcError };
+type Result_11 = variant { Ok : DumpConsensusState; Err : RpcError };
+type Result_12 = variant { Ok : HeaderResult; Err : RpcError };
+type Result_13 = variant { Ok : bool; Err : RpcError };
+type Result_14 = variant { Ok : NetInfo; Err : RpcError };
+type Result_15 = variant {
   Ok : NumUnconfirmedTransactionsResult;
   Err : RpcError;
 };
-type Result_15 = variant { Ok : Status; Err : RpcError };
-type Result_16 = variant { Ok : Tx; Err : RpcError };
+type Result_16 = variant { Ok : Status; Err : RpcError };
+type Result_17 = variant { Ok : Tx; Err : RpcError };
 type Result_2 = variant { Ok : ABCIQueryResult; Err : RpcError };
 type Result_3 = variant { Ok : BlockComplete; Err : RpcError };
 type Result_4 = variant { Ok : BlockResults; Err : RpcError };
 type Result_5 = variant { Ok : Blockchain; Err : RpcError };
-type Result_6 = variant { Ok : TxResult; Err : RpcError };
-type Result_7 = variant { Ok : CommitResult; Err : RpcError };
-type Result_8 = variant { Ok : ConsensusParamsResult; Err : RpcError };
-type Result_9 = variant { Ok : ConsensusState; Err : RpcError };
+type Result_6 = variant { Ok : BroadcastTxResult; Err : RpcError };
+type Result_7 = variant { Ok : TxResult; Err : RpcError };
+type Result_8 = variant { Ok : CommitResult; Err : RpcError };
+type Result_9 = variant { Ok : ConsensusParamsResult; Err : RpcError };
 type RoundState = record {
   height_vote_set : vec HeightVoteSet;
   "height/round/step" : text;
@@ -461,18 +469,19 @@ service : (InitArgs) -> {
   sol_getBlockByHash : (RpcServices, opt RpcConfig, text) -> (Result_3);
   sol_getBlockResults : (RpcServices, opt RpcConfig, text) -> (Result_4);
   sol_getBlockchain : (RpcServices, opt RpcConfig, text, text) -> (Result_5);
-  sol_getCheckTx : (RpcServices, opt RpcConfig, text) -> (Result_6);
-  sol_getCommit : (RpcServices, opt RpcConfig, text) -> (Result_7);
-  sol_getConsensusParams : (RpcServices, opt RpcConfig, text) -> (Result_8);
-  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_9);
-  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_10);
-  sol_getHeader : (RpcServices, opt RpcConfig, text) -> (Result_11);
-  sol_getHeaderByHash : (RpcServices, opt RpcConfig, text) -> (Result_11);
-  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_12);
-  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_13);
-  sol_getNumUnconfirmedTxs : (RpcServices, opt RpcConfig) -> (Result_14);
-  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_15);
-  sol_getTx : (RpcServices, opt RpcConfig, text, bool) -> (Result_16);
+  sol_getBroadcastTxAsync : (RpcServices, opt RpcConfig, text) -> (Result_6);
+  sol_getCheckTx : (RpcServices, opt RpcConfig, text) -> (Result_7);
+  sol_getCommit : (RpcServices, opt RpcConfig, text) -> (Result_8);
+  sol_getConsensusParams : (RpcServices, opt RpcConfig, text) -> (Result_9);
+  sol_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_10);
+  sol_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_11);
+  sol_getHeader : (RpcServices, opt RpcConfig, text) -> (Result_12);
+  sol_getHeaderByHash : (RpcServices, opt RpcConfig, text) -> (Result_12);
+  sol_getHealth : (RpcServices, opt RpcConfig) -> (Result_13);
+  sol_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_14);
+  sol_getNumUnconfirmedTxs : (RpcServices, opt RpcConfig) -> (Result_15);
+  sol_getStatus : (RpcServices, opt RpcConfig) -> (Result_16);
+  sol_getTx : (RpcServices, opt RpcConfig, text, bool) -> (Result_17);
   unregisterProvider : (text) -> (bool);
   updateProvider : (UpdateProviderArgs) -> ();
 }

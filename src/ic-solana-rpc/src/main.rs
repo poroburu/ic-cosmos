@@ -11,8 +11,8 @@ use ic_solana::{
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
-        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, CandidValue, CheckTxResult, CommitResult,
-        ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
+        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CandidValue,
+        CheckTxResult, CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
         NumUnconfirmedTransactionsResult, Status, Tx,
     },
 };
@@ -189,6 +189,16 @@ pub async fn sol_get_check_tx(source: RpcServices, config: Option<RpcConfig>, tx
     Ok(client.get_check_tx(tx).await?)
 }
 
+#[update(name = "sol_getBroadcastTxAsync")]
+#[candid_method(rename = "sol_getBroadcastTxAsync")]
+pub async fn sol_get_broadcast_tx(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    tx: String,
+) -> RpcResult<BroadcastTxResult> {
+    let client = rpc_client(source, config);
+    Ok(client.get_broadcast_tx_async(tx).await?)
+}
 /// Sends a JSON-RPC request to a specified Solana node provider,
 /// supporting custom RPC methods.
 #[update]
