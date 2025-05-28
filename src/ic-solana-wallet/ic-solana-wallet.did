@@ -1,7 +1,7 @@
 type CommitmentLevel = variant { Finalized; Confirmed; Processed };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
 type HttpHeader = record { value : text; name : text };
-type InitArgs = record { schnorr_key : opt text; cos_canister : opt principal };
+type InitArgs = record { cos_canister : opt principal; ecdsa_key : opt text };
 type JsonRpcError = record { code : int64; message : text };
 type RejectionCode = variant {
   NoError;
@@ -51,10 +51,10 @@ type UiTransactionEncoding = variant {
 service : (InitArgs) -> {
   address : () -> (text);
   sendTransaction : (
-    RpcServices,
-    opt RpcConfig,
-    text,
-    opt RpcSendTransactionConfig,
-  ) -> (Result) query;
+      RpcServices,
+      opt RpcConfig,
+      text,
+      opt RpcSendTransactionConfig,
+    ) -> (Result) query;
   signMessage : (blob) -> (blob) query;
-};
+}
