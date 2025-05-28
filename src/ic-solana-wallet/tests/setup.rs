@@ -42,8 +42,8 @@ impl SolanaWalletSetup {
             setup: TestSetup::new(
                 WASM.with(|wasm| wasm.clone()),
                 InitArgs {
-                    sol_canister,
-                    schnorr_key: None,
+                    cos_canister: sol_canister,
+                    ecdsa_key: None,
                 },
             ),
         }

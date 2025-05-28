@@ -7,11 +7,10 @@ use ic_solana::{
     types::{BlockHash, Pubkey, RpcSendTransactionConfig, Transaction},
 };
 use ic_solana_wallet::{
-    eddsa::{eddsa_public_key, sign_with_eddsa},
+    eddsa::{ecdsa_public_key, sign_with_ecdsa},
     state::{read_state, InitArgs, State},
     utils::validate_caller_not_anonymous,
 };
-use serde_bytes::ByteBuf;
 
 /// Returns the public key of the Solana wallet associated with the caller.
 ///
@@ -22,10 +21,19 @@ use serde_bytes::ByteBuf;
 #[candid_method]
 pub async fn address() -> String {
     let caller = validate_caller_not_anonymous();
-    let key_name = read_state(|s| s.schnorr_key.to_owned());
-    let derived_path = vec![ByteBuf::from(caller.as_slice())];
-    let pk = eddsa_public_key(key_name, derived_path).await;
-    Pubkey::try_from(pk.as_slice()).expect("Invalid public key").to_string()
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
+    let pk = ecdsa_public_key(key_name, derived_path).await;
+
+    // For secp256k1, compressed public key is 33 bytes:
+    // - First byte is 0x02 or 0x03 (compression prefix)
+    // - Followed by 32 bytes of the x-coordinate
+    if pk.len() != 33 {
+        panic!("Expected 33-byte compressed public key");
+    }
+
+    //let x_coordinate = &pk[1..];
+    Pubkey::try_from(pk).expect("Invalid public key").to_string()
 }
 
 /// Signs a provided message using the caller's Eddsa key.
@@ -40,11 +48,11 @@ pub async fn address() -> String {
 ///   failure.
 #[update(name = "signMessage")]
 #[candid_method(query, rename = "signMessage")]
-pub async fn sign_message(message: String) -> Vec<u8> {
+pub async fn sign_message(message: Vec<u8>) -> Vec<u8> {
     let caller = validate_caller_not_anonymous();
-    let key_name = read_state(|s| s.schnorr_key.to_owned());
-    let derived_path = vec![ByteBuf::from(caller.as_slice())];
-    sign_with_eddsa(key_name, derived_path, message.as_bytes().into()).await
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
+    sign_with_ecdsa(key_name, derived_path, message).await
 }
 
 /// Signs and sends a transaction to the Solana network.
@@ -69,7 +77,7 @@ pub async fn send_transaction(
     params: Option<RpcSendTransactionConfig>,
 ) -> RpcResult<String> {
     let caller = validate_caller_not_anonymous();
-    let sol_canister = read_state(|s| s.sol_canister);
+    let sol_canister = read_state(|s| s.cos_canister);
 
     let mut tx = Transaction::from_str(&raw_transaction).expect("Invalid transaction");
 
@@ -80,10 +88,10 @@ pub async fn send_transaction(
         tx.message.recent_blockhash = BlockHash::from_str(&response.0?).expect("Invalid recent blockhash");
     }
 
-    let key_name = read_state(|s| s.schnorr_key.to_owned());
-    let derived_path = vec![ByteBuf::from(caller.as_slice())];
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
 
-    let signature = sign_with_eddsa(key_name, derived_path, tx.message_data())
+    let signature = sign_with_ecdsa(key_name, derived_path, tx.message_data())
         .await
         .try_into()
         .expect("Invalid signature");

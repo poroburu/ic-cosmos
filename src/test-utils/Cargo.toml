@@ -8,7 +8,6 @@ candid = { workspace = true }
 ic-cdk = { workspace = true }
 ic-canister-log = { workspace = true }
 ic-canisters-http-types = { workspace = true }
-ic-management-canister-types = { workspace = true }
 ic-metrics-encoder = { workspace = true }
 ic-stable-structures = { workspace = true }
 url = { workspace = true }
@@ -17,3 +16,6 @@ ic-test-utilities-load-wasm = { workspace = true }
 serde_bytes = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+secp256k1 = { workspace = true }
+bip32 = { workspace = true }
+bs58 = { workspace = true }
