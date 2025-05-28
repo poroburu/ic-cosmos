@@ -5,7 +5,8 @@ members = [
     "src/test-utils",
     "src/ic-solana",
     "src/ic-solana-rpc",
-    "src/ic-solana-wallet",
+    "src/ic-solana-wallet", 
+    "src/cosmos-utils",
 ]
 
 [workspace.package]
