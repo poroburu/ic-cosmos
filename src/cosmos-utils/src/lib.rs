@@ -376,6 +376,100 @@ pub fn get_account_info(address: &str) -> Result<(u64, u64), Box<dyn Error>> {
     Ok((account.account_number, account.sequence))
 }
 
+pub fn analyze_account_response(address: &str) -> Result<String, Box<dyn Error>> {
+    let client = Client::new();
+    let query_data = format!("0a{:02x}{}", address.len(), hex::encode(address.as_bytes()));
+
+    let request = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "abci_query",
+        "params": {
+            "path": "/cosmos.auth.v1beta1.Query/Account",
+            "data": query_data,
+            "height": "0",
+            "prove": false
+        }
+    });
+
+    let response = client
+        .post("https://rpc.testcosmos.directory/cosmosicsprovidertestnet")
+        .json(&request)
+        .send()?;
+
+    let response_json: serde_json::Value = response.json()?;
+
+    let mut analysis = String::new();
+
+    // Check for error in response
+    if let Some(error) = response_json.get("error") {
+        return Ok(format!("RPC Error: {}", error));
+    }
+
+    // Check for error code in response
+    if let Some(code) = response_json["result"]["response"]["code"].as_i64() {
+        if code != 0 {
+            let log = response_json["result"]["response"]["log"]
+                .as_str()
+                .unwrap_or("Unknown error");
+            return Ok(format!("Query Error (code {}): {}", code, log));
+        }
+    }
+
+    let result = response_json["result"]["response"]["value"]
+        .as_str()
+        .ok_or_else(|| "Failed to get account info")?;
+
+    analysis.push_str(&format!("Raw response value (base64): {}\n", result));
+
+    let decoded = base64::decode(result)?;
+    analysis.push_str(&format!("Decoded response (hex): {}\n", hex::encode(&decoded)));
+    analysis.push_str(&format!("Decoded response length: {} bytes\n\n", decoded.len()));
+
+    // Parse the QueryAccountResponse
+    let query_response = QueryAccountResponse::decode(&decoded[..])?;
+    analysis.push_str("Parsed QueryAccountResponse:\n");
+
+    if let Some(account_any) = &query_response.account {
+        analysis.push_str(&format!("  Account type URL: {}\n", account_any.type_url));
+        analysis.push_str(&format!("  Account value length: {} bytes\n", account_any.value.len()));
+        analysis.push_str(&format!(
+            "  Account value (hex): {}\n\n",
+            hex::encode(&account_any.value)
+        ));
+
+        // Parse the BaseAccount
+        if let Ok(account) = BaseAccount::decode(account_any.value.as_slice()) {
+            analysis.push_str("Parsed BaseAccount structure:\n");
+            analysis.push_str(&format!("  Address: {}\n", account.address));
+            analysis.push_str(&format!("  Account Number: {}\n", account.account_number));
+            analysis.push_str(&format!("  Sequence: {}\n", account.sequence));
+
+            if let Some(pub_key) = &account.pub_key {
+                analysis.push_str(&format!("  Public Key Type: {}\n", pub_key.type_url));
+                analysis.push_str(&format!("  Public Key Value (hex): {}\n", hex::encode(&pub_key.value)));
+                analysis.push_str(&format!("  Public Key Value length: {} bytes\n", pub_key.value.len()));
+
+                // If it's a secp256k1 public key, decode it
+                if pub_key.type_url == "/cosmos.crypto.secp256k1.PubKey" {
+                    if let Ok(secp_key) = PubKey::decode(pub_key.value.as_slice()) {
+                        analysis.push_str(&format!("  Secp256k1 Key (hex): {}\n", hex::encode(&secp_key.key)));
+                        analysis.push_str(&format!("  Secp256k1 Key length: {} bytes\n", secp_key.key.len()));
+                    }
+                }
+            } else {
+                analysis.push_str("  Public Key: None (account not used yet)\n");
+            }
+        } else {
+            analysis.push_str("Failed to parse BaseAccount\n");
+        }
+    } else {
+        analysis.push_str("No account found in response\n");
+    }
+
+    Ok(analysis)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
