@@ -282,6 +282,10 @@ pub fn broadcast_transaction(tx_base64: &str) -> Result<(), Box<dyn Error>> {
     let response_json: serde_json::Value = response.json()?;
     println!("\nTransaction broadcast response:");
     println!("{}", serde_json::to_string_pretty(&response_json)?);
+    println!(
+        "https://www.mintscan.io/ics-testnet-provider/tx/{}",
+        response_json["result"]["hash"].as_str().unwrap_or("")
+    );
     Ok(())
 }
 
@@ -290,7 +294,7 @@ pub fn print_fund_command() -> Result<(), Box<dyn Error>> {
     let cosmos_address = public_key_to_cosmos_address(&public_key)?;
 
     println!("\nTo fund your wallet, run this command:");
-    println!("gaiad tx bank send cosmos17xqjqfljz4aq6nurwg9r3r9l7gxtajz0hq3ewf {} 100000uatom --chain-id provider --node https://rpc.testcosmos.directory/cosmosicsprovidertestnet --fees 1000uatom", cosmos_address);
+    println!("gaiad tx bank send <faucet_address> {} 100000uatom --chain-id provider --node https://rpc.testcosmos.directory/cosmosicsprovidertestnet --fees 1000uatom", cosmos_address);
     println!(
         "\nThis will send 100,000 uatom from the faucet wallet to your address: {}",
         cosmos_address
