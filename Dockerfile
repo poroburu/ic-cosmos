@@ -58,10 +58,10 @@ LABEL io.icp.artifactType="canister" \
       io.icp.artifactName="rpc"
 RUN mkdir -p ./artifacts \
     && ./scripts/build --rpc \
-    &&  cp ./ic-solana-rpc.wasm.gz ./artifacts/ic-solana-rpc.wasm.gz \
-    && ./scripts/did ic-solana-rpc \
-    && cp ./src/ic-solana-rpc/ic-solana-rpc.did ./artifacts/ic-solana-rpc.did \
-    && sha256sum ./ic-solana-rpc.wasm.gz | awk '{ print $1 }' > ./artifacts/ic-solana-rpc.wasm.gz.sha256
+    &&  cp ./ic-cosmos-rpc.wasm.gz ./artifacts/ic-cosmos-rpc.wasm.gz \
+    && ./scripts/did ic-cosmos-rpc \
+    && cp ./src/ic-cosmos-rpc/ic-cosmos-rpc.did ./artifacts/ic-cosmos-rpc.did \
+    && sha256sum ./ic-cosmos-rpc.wasm.gz | awk '{ print $1 }' > ./artifacts/ic-cosmos-rpc.wasm.gz.sha256
 
 # =======================
 # Build Wallet Stage
@@ -72,7 +72,7 @@ LABEL io.icp.artifactType="canister" \
       io.icp.artifactName="wallet"
 RUN mkdir -p ./artifacts \
     && ./scripts/build --wallet \
-    &&  cp ./ic-solana-wallet.wasm.gz ./artifacts/ic-solana-wallet.wasm.gz \
-    && ./scripts/did ic-solana-wallet \
-    && cp ./src/ic-solana-wallet/ic-solana-wallet.did ./artifacts/ic-solana-wallet.did \
-    && sha256sum ./ic-solana-wallet.wasm.gz | awk '{ print $1 }' > ./artifacts/ic-solana-wallet.wasm.gz.sha256
+    &&  cp ./ic-cosmos-wallet.wasm.gz ./artifacts/ic-cosmos-wallet.wasm.gz \
+    && ./scripts/did ic-cosmos-wallet \
+    && cp ./src/ic-cosmos-wallet/ic-cosmos-wallet.did ./artifacts/ic-cosmos-wallet.did \
+    && sha256sum ./ic-cosmos-wallet.wasm.gz | awk '{ print $1 }' > ./artifacts/ic-cosmos-wallet.wasm.gz.sha256

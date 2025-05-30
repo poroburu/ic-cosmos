@@ -20,7 +20,7 @@ Before contributing, consider the following:
 
 - If you want to contribute directly to this repository, typical fixes might include any of the following:
 
-  - Fixes to resolve bugs or documentation errors
+  - Fixes to recosve bugs or documentation errors
   - Code improvements
   - Feature requests
 

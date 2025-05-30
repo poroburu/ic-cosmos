@@ -165,7 +165,7 @@ pub fn create_send_transaction(
 
 pub fn get_public_key_from_canister() -> Result<String, Box<dyn Error>> {
     let output = Command::new("dfx")
-        .args(["canister", "call", "solana_wallet", "address"])
+        .args(["canister", "call", "cosmos_wallet", "address"])
         .output()?;
 
     let stdout = String::from_utf8(output.stdout)?;
@@ -182,7 +182,7 @@ pub fn get_signature_from_canister(sign_bytes: &[u8]) -> Result<Vec<u8>, Box<dyn
             "canister",
             "call",
             "--update",
-            "solana_wallet",
+            "cosmos_wallet",
             "signMessage",
             &format!(
                 "(blob \"{}\")",

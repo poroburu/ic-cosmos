@@ -1,0 +1,504 @@
+type ABCIQueryResult = record { response : ABCIResponse };
+type ABCIResponse = record {
+  key : opt text;
+  log : text;
+  height : text;
+  value : text;
+  code : int32;
+  codespace : text;
+  index : text;
+  proof : opt text;
+};
+type AbciInfo = record { response : AbciResponse };
+type AbciResponse = record {
+  last_block_app_hash : text;
+  data : text;
+  version : text;
+  last_block_height : text;
+  app_version : opt text;
+};
+type Auth = variant { RegisterProvider; Manage };
+type Block = record {
+  last_commit : opt LastCommit;
+  data : vec record { text; vec text };
+  evidence : vec record { text; vec Evidence };
+  header : BlockHeader;
+};
+type BlockComplete = record { block_id : BlockID; block : Block };
+type BlockEvent = record { "type" : text; attributes : vec Event };
+type BlockHeader = record {
+  height : text;
+  evidence_hash : text;
+  time : text;
+  proposer_address : text;
+  version : Version;
+  chain_id : text;
+  last_results_hash : text;
+  app_hash : text;
+  data_hash : text;
+  last_commit_hash : text;
+  last_block_id : BlockID;
+  next_validators_hash : text;
+  consensus_hash : text;
+  validators_hash : text;
+};
+type BlockHeader_1 = record {
+  height : text;
+  evidence_hash : text;
+  time : text;
+  proposer_address : text;
+  version : Version_1;
+  chain_id : text;
+  last_results_hash : text;
+  app_hash : text;
+  data_hash : text;
+  last_commit_hash : text;
+  last_block_id : BlockID;
+  next_validators_hash : text;
+  consensus_hash : text;
+  validators_hash : text;
+};
+type BlockID = record { hash : text; parts : BlockParts };
+type BlockMeta = record {
+  block_id : BlockID;
+  block_size : text;
+  num_txs : text;
+  header : BlockHeader;
+};
+type BlockParams = record {
+  time_iota_ms : opt text;
+  max_bytes : text;
+  max_gas : text;
+};
+type BlockParts = record { total : int32; hash : text };
+type BlockParts_1 = record { parts : vec text; header : BlockParts };
+type BlockResults = record {
+  height : text;
+  validator_updates : opt vec ValidatorUpdate;
+  consensus_param_updates : opt ConsensusParams;
+  txs_results : opt vec TxResult;
+  finalize_block_events : opt vec BlockEvent;
+};
+type Block_1 = record {
+  last_commit : opt LastCommit_1;
+  data : vec text;
+  evidence : vec Evidence_1;
+  header : BlockHeader_1;
+};
+type Blockchain = record { last_height : text; block_metas : vec BlockMeta };
+type BroadcastTxResult = record {
+  log : text;
+  code : int32;
+  data : text;
+  hash : text;
+  codespace : text;
+};
+type Channel = record {
+  ID : int32;
+  SendQueueSize : text;
+  Priority : text;
+  SendQueueCapacity : text;
+  RecentlySent : text;
+};
+type Commit = record {
+  height : text;
+  block_id : BlockID;
+  signatures : vec Signatures;
+  round : int32;
+};
+type CommitResult = record { canonical : bool; signed_header : SignedHeader };
+type ConnectionStatus = record {
+  SendMonitor : Monitor;
+  Channels : vec Channel;
+  RecvMonitor : Monitor;
+  Duration : text;
+};
+type ConsensusParams = record {
+  validator : ValidatorParams;
+  evidence : EvidenceParams;
+  block : BlockParams;
+};
+type ConsensusParamsResult = record {
+  consensus_params : ConsensusParams;
+  block_height : text;
+};
+type ConsensusState = record { round_state : RoundState };
+type ConsensusStrategy = variant { Equality; Threshold : nat8 };
+type DumpConsensusState = record {
+  round_state : DumpRoundState;
+  peers : vec PeerState;
+};
+type DumpRoundState = record {
+  height : text;
+  last_commit : opt LastCommit_1;
+  proposal_block : opt Block_1;
+  triggered_timeout_precommit : bool;
+  commit_round : int32;
+  votes : vec VoteSet;
+  step : int32;
+  valid_block_parts : opt BlockParts_1;
+  proposal_block_parts : opt BlockParts_1;
+  locked_block_parts : opt BlockParts_1;
+  last_validators : ValidatorSet;
+  start_time : text;
+  locked_block : opt Block_1;
+  valid_block : opt Block_1;
+  proposal : opt Proposal;
+  commit_time : text;
+  locked_round : int32;
+  valid_round : int32;
+  validators : ValidatorSet;
+  round : int32;
+};
+type Event = record { key : text; value : text; index : bool };
+type Evidence = record {
+  height : int32;
+  validator : Validator;
+  time : int32;
+  "type" : text;
+  total_voting_power : int32;
+};
+type EvidenceParams = record {
+  max_age_num_blocks : text;
+  max_age_duration : text;
+  max_bytes : text;
+};
+type Evidence_1 = record {
+  height : int32;
+  validator : Validator_1;
+  time : int32;
+  "type" : text;
+  total_voting_power : int32;
+};
+type HeaderResult = record { header : BlockHeader };
+type HeightVoteSet = record {
+  prevotes_bit_array : text;
+  precommits : vec text;
+  prevotes : vec text;
+  precommits_bit_array : text;
+  round : int32;
+};
+type HttpHeader = record { value : text; name : text };
+type HttpRequest = record {
+  url : text;
+  method : text;
+  body : blob;
+  headers : vec record { text; text };
+};
+type HttpResponse = record {
+  body : blob;
+  headers : vec record { text; text };
+  status_code : nat16;
+};
+type InitArgs = record { managers : opt vec principal; demo : opt bool };
+type JsonRpcError = record { code : int64; message : text };
+type LastCommit = record {
+  height : text;
+  block_id : BlockID;
+  signatures : vec Signatures;
+  round : int32;
+};
+type LastCommit_1 = record {
+  votes_bit_array : text;
+  votes : vec text;
+  peer_maj_23s : record {};
+};
+type Metrics = record {
+  cyclesWithdrawn : nat;
+  errUnauthorized : vec record { text; nat };
+  auths : vec record { text; nat };
+  responses : vec record { record { text; text; text }; nat64 };
+  errNoPermission : nat64;
+  inconsistentResponses : vec record { record { text; text }; nat64 };
+  cyclesCharged : vec record { record { text; text }; nat };
+  requests : vec record { record { text; text }; nat64 };
+  errHttpOutcall : vec record { record { text; text }; nat64 };
+  errHostNotAllowed : vec record { text; nat64 };
+};
+type Monitor = record {
+  Start : text;
+  InstRate : text;
+  Idle : text;
+  BytesRem : text;
+  AvgRate : text;
+  Active : bool;
+  Bytes : text;
+  Samples : text;
+  Progress : int32;
+  CurRate : text;
+  TimeRem : text;
+  PeakRate : text;
+  Duration : text;
+};
+type NetInfo = record {
+  n_peers : text;
+  peers : vec Peer;
+  listeners : vec text;
+  listening : bool;
+};
+type NodeInfo = record {
+  id : text;
+  other : OtherInfo;
+  listen_addr : text;
+  network : text;
+  channels : text;
+  version : text;
+  moniker : text;
+  protocol_version : ProtocolVersion;
+};
+type NumUnconfirmedTransactionsResult = record {
+  total : text;
+  total_bytes : text;
+  n_txs : text;
+};
+type OtherInfo = record { tx_index : text; rpc_address : text };
+type Peer = record {
+  node_info : NodeInfo;
+  connection_status : ConnectionStatus;
+  is_outbound : bool;
+  remote_ip : text;
+};
+type PeerRoundState = record {
+  height : text;
+  catchup_commit : opt text;
+  last_commit : opt text;
+  precommits : opt text;
+  prevotes : opt text;
+  step : int32;
+  proposal_block_parts : opt text;
+  proposal_pol : opt text;
+  start_time : text;
+  proposal : bool;
+  catchup_commit_round : opt int32;
+  proposal_pol_round : opt int32;
+  proposal_block_parts_header : opt BlockParts;
+  round : int32;
+  last_commit_round : opt int32;
+};
+type PeerState = record { node_address : text; peer_state : PeerStateInfo };
+type PeerStateInfo = record { round_state : PeerRoundState; stats : PeerStats };
+type PeerStats = record { block_parts : text; votes : text };
+type Proposal = record {
+  height : text;
+  signature : text;
+  block_id : BlockID;
+  "type" : bool;
+  pol_round : int32;
+  timestamp : text;
+  round : int32;
+};
+type Proposer = record { address : text; index : int32 };
+type ProtocolVersion = record { app : text; p2p : text; block : text };
+type PubKey = record { value : text; "type" : text };
+type RegisterProviderArgs = record {
+  id : text;
+  url : text;
+  auth : opt RpcAuth;
+};
+type RejectionCode = variant {
+  NoError;
+  CanisterError;
+  SysTransient;
+  DestinationInvalid;
+  Unknown;
+  SysFatal;
+  CanisterReject;
+};
+type Result = variant { Ok : AbciInfo; Err : RpcError };
+type Result_1 = variant { Ok : ABCIQueryResult; Err : RpcError };
+type Result_10 = variant { Ok : DumpConsensusState; Err : RpcError };
+type Result_11 = variant { Ok : HeaderResult; Err : RpcError };
+type Result_12 = variant { Ok : bool; Err : RpcError };
+type Result_13 = variant { Ok : NetInfo; Err : RpcError };
+type Result_14 = variant {
+  Ok : NumUnconfirmedTransactionsResult;
+  Err : RpcError;
+};
+type Result_15 = variant { Ok : Status; Err : RpcError };
+type Result_16 = variant { Ok : Tx; Err : RpcError };
+type Result_17 = variant { Ok : ValidatorsResult; Err : RpcError };
+type Result_18 = variant { Ok : text; Err : RpcError };
+type Result_2 = variant { Ok : BlockComplete; Err : RpcError };
+type Result_3 = variant { Ok : BlockResults; Err : RpcError };
+type Result_4 = variant { Ok : Blockchain; Err : RpcError };
+type Result_5 = variant { Ok : BroadcastTxResult; Err : RpcError };
+type Result_6 = variant { Ok : TxResult; Err : RpcError };
+type Result_7 = variant { Ok : CommitResult; Err : RpcError };
+type Result_8 = variant { Ok : ConsensusParamsResult; Err : RpcError };
+type Result_9 = variant { Ok : ConsensusState; Err : RpcError };
+type RoundState = record {
+  height_vote_set : vec HeightVoteSet;
+  "height/round/step" : text;
+  start_time : text;
+  proposal_block_hash : text;
+  proposer : Proposer;
+  valid_block_hash : text;
+  locked_block_hash : text;
+};
+type RpcApi = record { network : text; headers : opt vec HttpHeader };
+type RpcAuth = variant {
+  QueryParam : HttpHeader;
+  BearerToken : record { token : text };
+  PathSegment : record { segment : text };
+  HeaderParam : HttpHeader;
+};
+type RpcConfig = record {
+  responseConsensus : opt ConsensusStrategy;
+  responseSizeEstimate : opt nat64;
+};
+type RpcError = variant {
+  JsonRpcError : JsonRpcError;
+  Text : text;
+  InconsistentResponse : vec record { RpcApi; text };
+  ValidationError : text;
+  HttpOutcallError : record { code : RejectionCode; message : text };
+  ParseError : text;
+};
+type RpcServices = variant {
+  Mainnet;
+  Custom : vec RpcApi;
+  Testnet;
+  Devnet;
+  Localnet;
+  Provider : vec text;
+};
+type Signatures = record {
+  block_id_flag : int32;
+  signature : opt text;
+  validator_address : text;
+  timestamp : text;
+};
+type SignedHeader = record { commit : Commit; header : BlockHeader };
+type Status = record {
+  node_info : NodeInfo;
+  sync_info : SyncInfo;
+  validator_info : ValidatorInfo;
+};
+type SyncInfo = record {
+  earliest_app_hash : text;
+  latest_app_hash : text;
+  latest_block_hash : text;
+  latest_block_time : text;
+  earliest_block_hash : text;
+  earliest_block_time : text;
+  earliest_block_height : text;
+  catching_up : bool;
+  latest_block_height : text;
+};
+type Tx = record {
+  tx : text;
+  height : text;
+  hash : text;
+  index : int32;
+  tx_result : TxResultData;
+};
+type TxResult = record {
+  log : text;
+  gas_wanted : text;
+  code : int32;
+  data : text;
+  info : text;
+  codespace : text;
+  events : opt vec BlockEvent;
+  gas_used : text;
+};
+type TxResultData = record {
+  log : text;
+  gas_wanted : text;
+  code : int32;
+  data : text;
+  tags : opt vec Event;
+  gas_used : text;
+};
+type UpdateProviderArgs = record {
+  id : text;
+  url : opt text;
+  auth : opt RpcAuth;
+};
+type Validator = record {
+  address : text;
+  pub_key : PubKey;
+  voting_power : int64;
+};
+type ValidatorInfo = record {
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type ValidatorParams = record { pub_key_types : vec text };
+type ValidatorPriority = record {
+  proposer_priority : text;
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type ValidatorSet = record {
+  proposer : ValidatorPriority;
+  validators : vec ValidatorPriority;
+};
+type ValidatorUpdate = record { pub_key : PubKey; power : text };
+type Validator_1 = record {
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type Validator_2 = record {
+  proposer_priority : text;
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type ValidatorsResult = record {
+  total : text;
+  count : text;
+  block_height : text;
+  validators : vec Validator_2;
+};
+type Version = record { app : opt text; block : text };
+type Version_1 = record { app : text; block : text };
+type VoteSet = record {
+  prevotes_bit_array : text;
+  precommits : opt vec text;
+  prevotes : opt vec text;
+  precommits_bit_array : text;
+  round : int32;
+};
+service : (InitArgs) -> {
+  authorize : (principal, Auth) -> (bool);
+  cos_getAbciInfo : (RpcServices, opt RpcConfig) -> (Result);
+  cos_getAbciQuery : (RpcServices, opt RpcConfig, text, text, text, bool) -> (
+      Result_1,
+    );
+  cos_getBlock : (RpcServices, opt RpcConfig, text) -> (Result_2);
+  cos_getBlockByHash : (RpcServices, opt RpcConfig, text) -> (Result_2);
+  cos_getBlockResults : (RpcServices, opt RpcConfig, text) -> (Result_3);
+  cos_getBlockchain : (RpcServices, opt RpcConfig, text, text) -> (Result_4);
+  cos_getBroadcastTxAsync : (RpcServices, opt RpcConfig, text) -> (Result_5);
+  cos_getBroadcastTxSync : (RpcServices, opt RpcConfig, text) -> (Result_5);
+  cos_getCheckTx : (RpcServices, opt RpcConfig, text) -> (Result_6);
+  cos_getCommit : (RpcServices, opt RpcConfig, text) -> (Result_7);
+  cos_getConsensusParams : (RpcServices, opt RpcConfig, text) -> (Result_8);
+  cos_getConsensusState : (RpcServices, opt RpcConfig) -> (Result_9);
+  cos_getDumpConsensusState : (RpcServices, opt RpcConfig) -> (Result_10);
+  cos_getHeader : (RpcServices, opt RpcConfig, text) -> (Result_11);
+  cos_getHeaderByHash : (RpcServices, opt RpcConfig, text) -> (Result_11);
+  cos_getHealth : (RpcServices, opt RpcConfig) -> (Result_12);
+  cos_getNetInfo : (RpcServices, opt RpcConfig) -> (Result_13);
+  cos_getNumUnconfirmedTxs : (RpcServices, opt RpcConfig) -> (Result_14);
+  cos_getStatus : (RpcServices, opt RpcConfig) -> (Result_15);
+  cos_getTx : (RpcServices, opt RpcConfig, text, bool) -> (Result_16);
+  cos_getValidators : (RpcServices, opt RpcConfig, text, text, text) -> (
+      Result_17,
+    );
+  deauthorize : (principal, Auth) -> (bool);
+  getAuthorized : (Auth) -> (vec principal) query;
+  getMetrics : () -> (Metrics) query;
+  getNodesInSubnet : () -> (nat32) query;
+  getProviders : () -> (vec text) query;
+  http_request : (HttpRequest) -> (HttpResponse) query;
+  registerProvider : (RegisterProviderArgs) -> ();
+  request : (RpcServices, text, text, opt nat64) -> (Result_18);
+  requestCost : (text, nat64) -> (nat) query;
+  unregisterProvider : (text) -> (bool);
+  updateProvider : (UpdateProviderArgs) -> ();
+}
