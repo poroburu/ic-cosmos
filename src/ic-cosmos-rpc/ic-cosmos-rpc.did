@@ -42,22 +42,6 @@ type BlockHeader = record {
   consensus_hash : text;
   validators_hash : text;
 };
-type BlockHeader_1 = record {
-  height : text;
-  evidence_hash : text;
-  time : text;
-  proposer_address : text;
-  version : Version_1;
-  chain_id : text;
-  last_results_hash : text;
-  app_hash : text;
-  data_hash : text;
-  last_commit_hash : text;
-  last_block_id : BlockID;
-  next_validators_hash : text;
-  consensus_hash : text;
-  validators_hash : text;
-};
 type BlockID = record { hash : text; parts : BlockParts };
 type BlockMeta = record {
   block_id : BlockID;
@@ -71,19 +55,12 @@ type BlockParams = record {
   max_gas : text;
 };
 type BlockParts = record { total : int32; hash : text };
-type BlockParts_1 = record { parts : vec text; header : BlockParts };
 type BlockResults = record {
   height : text;
   validator_updates : opt vec ValidatorUpdate;
   consensus_param_updates : opt ConsensusParams;
   txs_results : opt vec TxResult;
   finalize_block_events : opt vec BlockEvent;
-};
-type Block_1 = record {
-  last_commit : opt LastCommit_1;
-  data : vec text;
-  evidence : vec Evidence_1;
-  header : BlockHeader_1;
 };
 type Blockchain = record { last_height : text; block_metas : vec BlockMeta };
 type BroadcastTxResult = record {
@@ -124,30 +101,91 @@ type ConsensusParamsResult = record {
 };
 type ConsensusState = record { round_state : RoundState };
 type ConsensusStrategy = variant { Equality; Threshold : nat8 };
+type DumpBlock = record {
+  last_commit : opt DumpLastCommit;
+  data : vec text;
+  evidence : vec DumpEvidence;
+  header : DumpBlockHeader;
+};
+type DumpBlockHeader = record {
+  height : text;
+  evidence_hash : text;
+  time : text;
+  proposer_address : text;
+  version : DumpVersion;
+  chain_id : text;
+  last_results_hash : text;
+  app_hash : text;
+  data_hash : text;
+  last_commit_hash : text;
+  last_block_id : BlockID;
+  next_validators_hash : text;
+  consensus_hash : text;
+  validators_hash : text;
+};
+type DumpBlockParts = record { parts : vec text; header : BlockParts };
 type DumpConsensusState = record {
   round_state : DumpRoundState;
   peers : vec PeerState;
 };
+type DumpEvidence = record {
+  height : int32;
+  validator : DumpValidator;
+  time : int32;
+  "type" : text;
+  total_voting_power : int32;
+};
+type DumpLastCommit = record {
+  votes_bit_array : text;
+  votes : vec text;
+  peer_maj_23s : record {};
+};
+type DumpProposal = record {
+  height : text;
+  signature : text;
+  block_id : BlockID;
+  "type" : bool;
+  pol_round : int32;
+  timestamp : text;
+  round : int32;
+};
 type DumpRoundState = record {
   height : text;
-  last_commit : opt LastCommit_1;
-  proposal_block : opt Block_1;
+  last_commit : opt DumpLastCommit;
+  proposal_block : opt DumpBlock;
   triggered_timeout_precommit : bool;
   commit_round : int32;
-  votes : vec VoteSet;
+  votes : vec DumpVoteSet;
   step : int32;
-  valid_block_parts : opt BlockParts_1;
-  proposal_block_parts : opt BlockParts_1;
-  locked_block_parts : opt BlockParts_1;
-  last_validators : ValidatorSet;
+  valid_block_parts : opt DumpBlockParts;
+  proposal_block_parts : opt DumpBlockParts;
+  locked_block_parts : opt DumpBlockParts;
+  last_validators : DumpValidatorSet;
   start_time : text;
-  locked_block : opt Block_1;
-  valid_block : opt Block_1;
-  proposal : opt Proposal;
+  locked_block : opt DumpBlock;
+  valid_block : opt DumpBlock;
+  proposal : opt DumpProposal;
   commit_time : text;
   locked_round : int32;
   valid_round : int32;
-  validators : ValidatorSet;
+  validators : DumpValidatorSet;
+  round : int32;
+};
+type DumpValidator = record {
+  address : text;
+  pub_key : PubKey;
+  voting_power : text;
+};
+type DumpValidatorSet = record {
+  proposer : ValidatorPriority;
+  validators : vec ValidatorPriority;
+};
+type DumpVersion = record { app : text; block : text };
+type DumpVoteSet = record {
+  prevotes_bit_array : text;
+  precommits : opt vec text;
+  prevotes : opt vec text;
+  precommits_bit_array : text;
   round : int32;
 };
 type Event = record { key : text; value : text; index : bool };
@@ -162,13 +200,6 @@ type EvidenceParams = record {
   max_age_num_blocks : text;
   max_age_duration : text;
   max_bytes : text;
-};
-type Evidence_1 = record {
-  height : int32;
-  validator : Validator_1;
-  time : int32;
-  "type" : text;
-  total_voting_power : int32;
 };
 type HeaderResult = record { header : BlockHeader };
 type HeightVoteSet = record {
@@ -197,11 +228,6 @@ type LastCommit = record {
   block_id : BlockID;
   signatures : vec Signatures;
   round : int32;
-};
-type LastCommit_1 = record {
-  votes_bit_array : text;
-  votes : vec text;
-  peer_maj_23s : record {};
 };
 type Metrics = record {
   cyclesWithdrawn : nat;
@@ -278,15 +304,6 @@ type PeerRoundState = record {
 type PeerState = record { node_address : text; peer_state : PeerStateInfo };
 type PeerStateInfo = record { round_state : PeerRoundState; stats : PeerStats };
 type PeerStats = record { block_parts : text; votes : text };
-type Proposal = record {
-  height : text;
-  signature : text;
-  block_id : BlockID;
-  "type" : bool;
-  pol_round : int32;
-  timestamp : text;
-  round : int32;
-};
 type Proposer = record { address : text; index : int32 };
 type ProtocolVersion = record { app : text; p2p : text; block : text };
 type PubKey = record { value : text; "type" : text };
@@ -432,37 +449,14 @@ type ValidatorPriority = record {
   pub_key : PubKey;
   voting_power : text;
 };
-type ValidatorSet = record {
-  proposer : ValidatorPriority;
-  validators : vec ValidatorPriority;
-};
 type ValidatorUpdate = record { pub_key : PubKey; power : text };
-type Validator_1 = record {
-  address : text;
-  pub_key : PubKey;
-  voting_power : text;
-};
-type Validator_2 = record {
-  proposer_priority : text;
-  address : text;
-  pub_key : PubKey;
-  voting_power : text;
-};
 type ValidatorsResult = record {
   total : text;
   count : text;
   block_height : text;
-  validators : vec Validator_2;
+  validators : vec ValidatorPriority;
 };
 type Version = record { app : opt text; block : text };
-type Version_1 = record { app : text; block : text };
-type VoteSet = record {
-  prevotes_bit_array : text;
-  precommits : opt vec text;
-  prevotes : opt vec text;
-  precommits_bit_array : text;
-  round : int32;
-};
 service : (InitArgs) -> {
   authorize : (principal, Auth) -> (bool);
   cos_getAbciInfo : (RpcServices, opt RpcConfig) -> (Result);

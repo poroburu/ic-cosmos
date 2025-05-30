@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use super::cosmos_common::NodeInfo;
+use super::cosmos_common::{NodeInfo, PubKey};
 
 /// Represents the complete status response from a Cosmos node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
@@ -25,18 +25,6 @@ pub struct Status {
     pub sync_info: SyncInfo,
     /// Information about the validator
     pub validator_info: ValidatorInfo,
-}
-
-/// Represents protocol version information for different components.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
-#[serde(rename_all = "snake_case")]
-pub struct ProtocolVersion {
-    /// P2P protocol version
-    pub p2p: String,
-    /// Block protocol version
-    pub block: String,
-    /// Application protocol version
-    pub app: String,
 }
 
 /// Represents synchronization information for the node.
@@ -85,13 +73,4 @@ pub struct ValidatorInfo {
     pub voting_power: String,
 }
 
-/// Represents a public key with its type and value.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
-#[serde(rename_all = "snake_case")]
-pub struct PubKey {
-    /// Type of the public key
-    #[serde(rename = "type")]
-    pub type_field: String,
-    /// Base64 encoded public key value
-    pub value: String,
-}
+

@@ -491,13 +491,13 @@ impl RpcClient {
         }
     }
 
-    /// Calculate the max response bytes for the provided block range.
-    fn get_block_range_max_response_bytes(start_slot: u64, limit: u64) -> u64 {
-        let end_slot = start_slot.saturating_add(limit);
-        let max_slot_str_len = end_slot.to_string().len() as u64;
-        let commas_size = if limit > 0 { limit - 1 } else { 0 };
-        36 + (max_slot_str_len * limit) + commas_size
-    }
+    // /// Calculate the max response bytes for the provided block range.
+    // fn get_block_range_max_response_bytes(start_slot: u64, limit: u64) -> u64 {
+    //     let end_slot = start_slot.saturating_add(limit);
+    //     let max_slot_str_len = end_slot.to_string().len() as u64;
+    //     let commas_size = if limit > 0 { limit - 1 } else { 0 };
+    //     36 + (max_slot_str_len * limit) + commas_size
+    // }
 
     /// Extracts the JSON-RPC `method` name from the request payload.
     ///

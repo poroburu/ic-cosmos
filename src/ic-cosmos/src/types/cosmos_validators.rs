@@ -22,7 +22,7 @@ pub struct ValidatorsResult {
     /// The block height
     pub block_height: String,
     /// The validators
-    pub validators: Vec<Validator>,
+    pub validators: Vec<ValidatorWithPriority>,
     /// The total count
     pub count: String,
     /// The total number of validators
@@ -32,7 +32,7 @@ pub struct ValidatorsResult {
 /// Represents a validator with priority.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
 #[serde(rename_all = "snake_case")]
-pub struct Validator {
+pub struct ValidatorWithPriority {
     /// The validator address
     pub address: String,
     /// The validator public key

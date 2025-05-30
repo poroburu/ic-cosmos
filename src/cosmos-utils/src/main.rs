@@ -1,6 +1,5 @@
-mod lib;
+use cosmos_utils::*;
 use hex;
-use lib::*;
 use std::env;
 
 fn print_usage() {
