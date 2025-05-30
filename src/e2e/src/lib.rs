@@ -1,17 +1,17 @@
 use std::{cell::RefCell, str::FromStr};
 
 use candid::{CandidType, Principal};
-use ic_solana::{
+use ic_cosmos::{
     rpc_client::RpcResult,
     types::{AccountMeta, BlockHash, Instruction, Pubkey},
 };
 
 thread_local! {
-    static SOL_PROVIDER_CANISTER: RefCell<Option<Principal>>  = const { RefCell::new(None) };
+    static cos_PROVIDER_CANISTER: RefCell<Option<Principal>>  = const { RefCell::new(None) };
 }
 
-fn sol_canister_id() -> Principal {
-    SOL_PROVIDER_CANISTER.with_borrow(|canister| canister.expect("Solana provider canister not initialized"))
+fn cos_canister_id() -> Principal {
+    cos_PROVIDER_CANISTER.with_borrow(|canister| canister.expect("cosmos provider canister not initialized"))
 }
 
 #[derive(CandidType, Debug)]
@@ -22,29 +22,29 @@ pub struct SendTransactionRequest {
 
 #[ic_cdk::update]
 async fn test() {
-    let sol_canister = sol_canister_id();
+    let cos_canister = cos_canister_id();
 
-    // Get the solana address associated with the caller
-    let response: Result<(String,), _> = ic_cdk::call(sol_canister, "sol_address", ()).await;
+    // Get the cosmos address associated with the caller
+    let response: Result<(String,), _> = ic_cdk::call(cos_canister, "cos_address", ()).await;
 
     // d|devnet|m|mainnet|t|testnet or custom rpc
     let cluster = "devnet";
 
-    let solana_address = Pubkey::from_str(&response.unwrap().0).expect("Invalid public key");
-    ic_cdk::println!("solana_address: {}", solana_address);
+    let cosmos_address = Pubkey::from_str(&response.unwrap().0).expect("Invalid public key");
+    ic_cdk::println!("cosmos_address: {}", cosmos_address);
 
     // Get the balance
     let response: Result<(RpcResult<u64>,), _> =
-        ic_cdk::call(sol_canister, "sol_getBalance", (cluster, solana_address.to_string())).await;
+        ic_cdk::call(cos_canister, "cos_getBalance", (cluster, cosmos_address.to_string())).await;
 
     let lamports = response.unwrap().0.unwrap();
     ic_cdk::println!("Balance: {} lamports", lamports);
 
     // Airdrop 1 SOL
     let response: Result<(RpcResult<String>,), _> = ic_cdk::call(
-        sol_canister,
-        "sol_requestAirdrop",
-        (cluster, solana_address.to_string(), 1_000_000_000u64),
+        cos_canister,
+        "cos_requestAirdrop",
+        (cluster, cosmos_address.to_string(), 1_000_000_000u64),
     )
     .await;
     ic_cdk::println!("Airdrop response: {:?}", response);
@@ -57,7 +57,7 @@ async fn test() {
     }
 
     // Get the latest blockhash
-    let response: Result<(RpcResult<String>,), _> = ic_cdk::call(sol_canister, "sol_latestBlockhash", (cluster,)).await;
+    let response: Result<(RpcResult<String>,), _> = ic_cdk::call(cos_canister, "cos_latestBlockhash", (cluster,)).await;
 
     let blockhash = BlockHash::from_str(&response.unwrap().0.unwrap()).unwrap();
     ic_cdk::println!("Latest Blockhash: {:?}", blockhash);
@@ -68,7 +68,7 @@ async fn test() {
         system_program_id,
         &(2, 0, 0, 0, 64, 66, 15, 0, 0, 0, 0, 0), // transfer 1_000_000 lamports
         vec![
-            AccountMeta::new(solana_address, true),
+            AccountMeta::new(cosmos_address, true),
             AccountMeta::new(
                 Pubkey::from_str("AAAAUrmaZWvna6vHndc5LoVWUBmnj9sjxnvPz5U3qZGY").unwrap(),
                 false,
@@ -78,8 +78,8 @@ async fn test() {
     );
 
     let response: Result<(RpcResult<String>,), _> = ic_cdk::call(
-        sol_canister,
-        "sol_sendTransaction",
+        cos_canister,
+        "cos_sendTransaction",
         (
             cluster,
             SendTransactionRequest {
@@ -94,16 +94,16 @@ async fn test() {
     ic_cdk::println!("Signature: {:?}", signature);
 
     // let transaction: Result<(RpcResult<EncodedConfirmedTransactionWithStatusMeta>,), _> =
-    //     ic_cdk::call(sol_canister, "sol_getTransaction", (signature.to_string(),)).await;
+    //     ic_cdk::call(cos_canister, "cos_getTransaction", (signature.to_string(),)).await;
     //
     // ic_cdk::println!("Transaction: {:?}", transaction);
 }
 
-/// When setting up the test canister, we need to save a reference to the solana provider canister
+/// When setting up the test canister, we need to save a reference to the cosmos provider canister
 /// so that we can call it later.
 #[ic_cdk::init]
-async fn init(sol_canister: String) {
-    SOL_PROVIDER_CANISTER.with(|canister| {
-        *canister.borrow_mut() = Some(Principal::from_text(sol_canister).expect("Invalid principal"));
+async fn init(cos_canister: String) {
+    cos_PROVIDER_CANISTER.with(|canister| {
+        *canister.borrow_mut() = Some(Principal::from_text(cos_canister).expect("Invalid principal"));
     });
 }

@@ -1,28 +1,28 @@
 {
   "canisters": {
-    "solana_rpc": {
+    "cosmos_rpc": {
       "type": "custom",
-      "candid": "src/ic-solana-rpc/ic-solana-rpc.did",
-      "wasm": "ic-solana-rpc.wasm.gz",
+      "candid": "src/ic-cosmos-rpc/ic-cosmos-rpc.did",
+      "wasm": "ic-cosmos-rpc.wasm.gz",
       "init_arg": "(record {})",
       "gzip": true
     },
-    "solana_rpc_demo": {
+    "cosmos_rpc_demo": {
       "type": "custom",
-      "candid": "src/ic-solana-rpc/ic-solana-rpc.did",
-      "wasm": "ic-solana-rpc.wasm.gz",
+      "candid": "src/ic-cosmos-rpc/ic-cosmos-rpc.did",
+      "wasm": "ic-cosmos-rpc.wasm.gz",
       "gzip": true,
       "init_arg": "(record {demo = opt true})"
     },
-    "solana_wallet": {
+    "cosmos_wallet": {
       "type": "custom",
-      "candid": "src/ic-solana-wallet/ic-solana-wallet.did",
-      "wasm": "ic-solana-wallet.wasm.gz",
+      "candid": "src/ic-cosmos-wallet/ic-cosmos-wallet.did",
+      "wasm": "ic-cosmos-wallet.wasm.gz",
       "gzip": true,
       "optimize": "cycles"
     },
     "e2e": {
-      "dependencies": ["solana_rpc", "solana_wallet"],
+      "dependencies": ["cosmos_rpc", "cosmos_wallet"],
       "type": "rust",
       "package": "e2e",
       "candid": "src/e2e/e2e.did",

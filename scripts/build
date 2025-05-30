@@ -12,7 +12,7 @@ cd $PROJECT_ROOT
 
 # Display the script title
 title() {
-  echo -e "Builds IC Solana Canister"
+  echo -e "Builds IC cosmos Canister"
 }
 
 usage() {
@@ -32,7 +32,7 @@ EOF
 help() {
   cat <<EOF
 
-Builds the IC Solana canisters.
+Builds the IC cosmos canisters.
 
 NOTE: This requires a working rust toolchain as well as ic-wasm.
 EOF
@@ -40,7 +40,7 @@ EOF
 
 # Function to build a single canister
 # Arguments:
-#   $1 - Canister name (e.g., ic-solana-rpc)
+#   $1 - Canister name (e.g., ic-cosmos-rpc)
 #   $2... - Extra cargo build arguments
 build_canister() {
   local canister=$1
@@ -98,7 +98,7 @@ build_canister() {
   fi
 
   case "$canister" in
-  ic-solana-rpc | ic-solana-wallet)
+  ic-cosmos-rpc | ic-cosmos-wallet)
     ic-wasm "$canister.wasm" -o "$canister.wasm" metadata candid:args -d "(InitArgs)" -v public
     ;;
   esac
@@ -132,11 +132,11 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   --rpc)
-    build_canister "ic-solana-rpc"
+    build_canister "ic-cosmos-rpc"
     shift
     ;;
   --wallet)
-    build_canister "ic-solana-wallet"
+    build_canister "ic-cosmos-wallet"
     shift
     ;;
   *)

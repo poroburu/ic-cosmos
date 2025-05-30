@@ -23,7 +23,7 @@ function generate_did() {
 
 # Check if at least one argument is provided
 if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 ic-solana-rpc,ic-solana-wallet,..."
+  echo "Usage: $0 ic-cosmos-rpc,ic-cosmos-wallet,..."
   exit 1
 fi
 
