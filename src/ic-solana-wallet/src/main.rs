@@ -1,0 +1,334 @@
+use std::str::FromStr;
+
+use candid::candid_method;
+use ic_cdk::update;
+use ic_solana::{
+    rpc_client::{RpcConfig, RpcResult, RpcServices},
+    types::{BlockHash, Pubkey, RpcSendTransactionConfig, Transaction, 
+           CosmosTransaction, CosmosCoin, public_key_to_cosmos_address, 
+           parse_account_info_from_abci, create_sign_doc_bytes, 
+           build_transaction_for_broadcast},
+};
+use ic_solana_wallet::{
+    eddsa::{ecdsa_public_key, sign_with_ecdsa},
+    state::{read_state, InitArgs, State},
+    utils::validate_caller_not_anonymous,
+};
+
+/// Returns the public key of the Solana wallet associated with the caller.
+///
+/// # Returns
+///
+/// - `String`: The Solana public key as a string.
+#[update]
+#[candid_method]
+pub async fn address() -> String {
+    let caller = validate_caller_not_anonymous();
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
+    let pk = ecdsa_public_key(key_name, derived_path).await;
+
+    // For secp256k1, compressed public key is 33 bytes:
+    // - First byte is 0x02 or 0x03 (compression prefix)
+    // - Followed by 32 bytes of the x-coordinate
+    if pk.len() != 33 {
+        panic!("Expected 33-byte compressed public key");
+    }
+
+    //let x_coordinate = &pk[1..];
+    Pubkey::try_from(pk).expect("Invalid public key").to_string()
+}
+
+/// Signs a provided message using the caller's Eddsa key.
+///
+/// # Parameters
+///
+/// - `message` (`String`): The message to be signed.
+///
+/// # Returns
+///
+/// - `RpcResult<String>`: The signature as a base58 encoded string on success, or an `RpcError` on
+///   failure.
+#[update(name = "signMessage")]
+#[candid_method(update, rename = "signMessage")]
+pub async fn sign_message(message: Vec<u8>) -> Vec<u8> {
+    let caller = validate_caller_not_anonymous();
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
+    sign_with_ecdsa(key_name, derived_path, message).await
+}
+
+/// Signs and sends a transaction to the Solana network.
+///
+/// # Parameters
+///
+/// - `provider` (`String`): The Solana RPC provider ID.
+/// - `raw_transaction` (`String`): The serialized unsigned transaction.
+/// - `config` (`Option<RpcSendTransactionConfig>`): Optional configuration for sending the
+///   transaction.
+///
+/// # Returns
+///
+/// - `RpcResult<String>`: The transaction signature as a string on success, or an `RpcError` on
+///   failure.
+#[update(name = "sendTransaction")]
+#[candid_method(update, rename = "sendTransaction")]
+pub async fn send_transaction(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    raw_transaction: String,
+    params: Option<RpcSendTransactionConfig>,
+) -> RpcResult<String> {
+    let caller = validate_caller_not_anonymous();
+    let sol_canister = read_state(|s| s.cos_canister);
+
+    let mut tx = Transaction::from_str(&raw_transaction).expect("Invalid transaction");
+
+    // Fetch the recent blockhash if it's not set
+    if tx.message.recent_blockhash == BlockHash::default() {
+        let response =
+            ic_cdk::call::<_, (RpcResult<String>,)>(sol_canister, "sol_getLatestBlockhash", (&source,)).await?;
+        tx.message.recent_blockhash = BlockHash::from_str(&response.0?).expect("Invalid recent blockhash");
+    }
+
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
+
+    let signature = sign_with_ecdsa(key_name, derived_path, tx.message_data())
+        .await
+        .try_into()
+        .expect("Invalid signature");
+
+    tx.add_signature(0, signature);
+
+    let response = ic_cdk::call::<_, (RpcResult<String>,)>(
+        sol_canister,
+        "sol_sendTransaction",
+        (&source, config, tx.to_string(), params),
+    )
+    .await?;
+
+    response.0
+}
+
+/// Returns the Cosmos address derived from the caller's public key.
+///
+/// # Returns
+///
+/// - `RpcResult<String>`: The Cosmos address as a string.
+#[update(name = "cosmosAddress")]
+#[candid_method(update, rename = "cosmosAddress")]
+pub async fn cosmos_address() -> RpcResult<String> {
+    let caller = validate_caller_not_anonymous();
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
+    let pk = ecdsa_public_key(key_name, derived_path).await;
+
+    public_key_to_cosmos_address(&bs58::encode(&pk).into_string())
+        .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(format!("Failed to derive Cosmos address: {}", e)))
+}
+
+/// Signs and sends a Cosmos transaction using cosmwasm_std types.
+///
+/// # Parameters
+///
+/// - `source` (`RpcServices`): The Cosmos RPC provider ID.
+/// - `config` (`Option<RpcConfig>`): Optional configuration for the RPC call.
+/// - `raw_transaction` (`String`): The serialized unsigned Cosmos transaction in JSON format.
+/// - `chain_id` (`String`): The chain ID for the Cosmos network.
+///
+/// # Returns
+///
+/// - `RpcResult<String>`: The transaction broadcast result on success, or an `RpcError` on failure.
+#[update(name = "sendCosmosTransaction")]
+#[candid_method(query, rename = "sendCosmosTransaction")]
+pub async fn send_cosmos_transaction(
+    source: RpcServices,
+    config: Option<RpcConfig>,
+    chain_id: String,
+    raw_transaction: String,
+) -> RpcResult<String> {
+    let caller = validate_caller_not_anonymous();
+    let cos_canister = read_state(|s| s.cos_canister);
+
+    // Parse the raw JSON transaction
+    let tx_json: serde_json::Value = serde_json::from_str(&raw_transaction)
+        .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(format!("Failed to parse transaction: {}", e)))?;
+
+    // Extract the from_address from the first message
+    let from_address = tx_json["body"]["messages"][0]["from_address"].as_str().ok_or_else(|| {
+        ic_solana::rpc_client::RpcError::ParseError("Missing from_address in transaction".to_string())
+    })?;
+
+    // Get our public key and derive the Cosmos address
+    let key_name = read_state(|s| s.ecdsa_key.to_owned());
+    let derived_path = vec![caller.as_slice().to_vec()];
+    let pk = ecdsa_public_key(key_name.clone(), derived_path.clone()).await;
+
+    let our_cosmos_address = public_key_to_cosmos_address(&bs58::encode(&pk).into_string())
+        .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(e))?;
+
+    // Verify that we own the from_address
+    if from_address != our_cosmos_address {
+        return Err(ic_solana::rpc_client::RpcError::ParseError(
+            "Transaction from_address does not match our wallet address".to_string(),
+        ));
+    }
+
+    // Get account info (account_number and sequence) via abci_query
+    let query_data = format!("0a{:02x}{}", from_address.len(), hex::encode(from_address.as_bytes()));
+    let account_info_result = ic_cdk::call::<_, (RpcResult<ic_solana::types::ABCIQueryResult>,)>(
+        cos_canister,
+        "sol_getAbciQuery",
+        (
+            &source,
+            config.clone(),
+            "/cosmos.auth.v1beta1.Query/Account".to_string(),
+            query_data,
+            "0".to_string(),
+            false,
+        ),
+    )
+    .await
+    .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(format!("Failed to call abci_query: {:?}", e)))?;
+
+    let abci_result = account_info_result.0?;
+
+    // Parse the ABCI response to get account info
+    let (account_number, sequence) = if abci_result.response.code == 0 {
+        // Success case - check if we have a value
+        if abci_result.response.value.is_empty() {
+            return Err(ic_solana::rpc_client::RpcError::ParseError(
+                "Empty response value from ABCI query".to_string(),
+            ));
+        }
+
+        // Parse the protobuf response
+        parse_account_info_from_abci(&abci_result.response.value)
+            .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(format!("Failed to parse account info: {}", e)))?
+    } else {
+        // Error case
+        let log_msg = if abci_result.response.log.is_empty() {
+            "Unknown error".to_string()
+        } else {
+            abci_result.response.log.clone()
+        };
+
+        return Err(ic_solana::rpc_client::RpcError::ParseError(format!(
+            "ABCI query failed with code {}: {}",
+            abci_result.response.code, log_msg
+        )));
+    };
+
+    // Extract transaction details from JSON and convert to cosmwasm_std types
+    let to_address = tx_json["body"]["messages"][0]["to_address"]
+        .as_str()
+        .ok_or_else(|| ic_solana::rpc_client::RpcError::ParseError("Missing to_address".to_string()))?;
+
+    // Parse amounts and convert to CosmosCoin
+    let amount_array = tx_json["body"]["messages"][0]["amount"]
+        .as_array()
+        .ok_or_else(|| ic_solana::rpc_client::RpcError::ParseError("Missing amount array".to_string()))?;
+
+    let mut amounts = Vec::new();
+    for amt in amount_array {
+        let denom = amt["denom"]
+            .as_str()
+            .ok_or_else(|| ic_solana::rpc_client::RpcError::ParseError("Missing denom".to_string()))?;
+        let amount_str = amt["amount"]
+            .as_str()
+            .ok_or_else(|| ic_solana::rpc_client::RpcError::ParseError("Missing amount".to_string()))?;
+
+        amounts.push(CosmosCoin::new(denom, amount_str));
+    }
+
+    // Parse fee and convert to CosmosCoin
+    let fee_array = tx_json["auth_info"]["fee"]["amount"]
+        .as_array()
+        .ok_or_else(|| ic_solana::rpc_client::RpcError::ParseError("Missing fee amount".to_string()))?;
+
+    let mut fees = Vec::new();
+    for fee_coin in fee_array {
+        let denom = fee_coin["denom"]
+            .as_str()
+            .ok_or_else(|| ic_solana::rpc_client::RpcError::ParseError("Missing fee denom".to_string()))?;
+        let amount_str = fee_coin["amount"]
+            .as_str()
+            .ok_or_else(|| ic_solana::rpc_client::RpcError::ParseError("Missing fee amount".to_string()))?;
+
+        fees.push(CosmosCoin::new(denom, amount_str));
+    }
+
+    let gas_limit = tx_json["auth_info"]["fee"]["gas_limit"]
+        .as_str()
+        .unwrap_or("200000")
+        .parse::<u64>()
+        .unwrap_or(200000);
+
+    let memo = tx_json["body"]["memo"].as_str().unwrap_or("");
+
+    // Create transaction structure
+    let transaction = CosmosTransaction {
+        from_address: from_address.to_string(),
+        to_address: to_address.to_string(),
+        amount: amounts,
+        fee: fees,
+        gas_limit,
+        memo: memo.to_string(),
+        chain_id: chain_id.clone(),
+        account_number,
+        sequence,
+    };
+
+    // Create sign doc for signing
+    let sign_bytes =
+        create_sign_doc_bytes(&transaction, &pk).map_err(|e| ic_solana::rpc_client::RpcError::ParseError(e))?;
+
+    // Sign the transaction
+    let signature = sign_with_ecdsa(key_name, derived_path, sign_bytes).await;
+
+    // Ensure signature is 64 bytes (truncate if longer)
+    let signature = if signature.len() >= 64 {
+        signature[..64].to_vec()
+    } else {
+        return Err(ic_solana::rpc_client::RpcError::ParseError(format!(
+            "Signature too short: got {} bytes, expected at least 64",
+            signature.len()
+        )));
+    };
+
+    // Build final transaction for broadcast
+    let tx_base64 = build_transaction_for_broadcast(&transaction, &pk, &signature)
+        .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(e))?;
+
+    // Broadcast the transaction
+    let broadcast_result = ic_cdk::call::<_, (RpcResult<ic_solana::types::BroadcastTxResult>,)>(
+        cos_canister,
+        "sol_getBroadcastTxSync",
+        (&source, config, tx_base64),
+    )
+    .await
+    .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(format!("Failed to broadcast transaction: {:?}", e)))?;
+
+    let result = broadcast_result.0?;
+    Ok(result.hash)
+}
+
+#[ic_cdk::init]
+fn init(args: InitArgs) {
+    State::init(args)
+}
+
+#[ic_cdk::pre_upgrade]
+fn pre_upgrade() {
+    State::pre_upgrade()
+}
+
+#[ic_cdk::post_upgrade]
+fn post_upgrade(args: Option<InitArgs>) {
+    State::post_upgrade(args)
+}
+
+fn main() {}
+
+ic_cdk::export_candid!();

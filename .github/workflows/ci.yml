@@ -31,9 +31,9 @@ jobs:
 #      matrix:
 #        include:
 #          - project: rpc
-#            artifact: ic-cosmos-rpc.wasm.gz
+#            artifact: ic-solana-rpc.wasm.gz
 #          - project: wallet
-#            artifact: ic-cosmos-wallet.wasm.gz
+#            artifact: ic-solana-wallet.wasm.gz
 #    steps:
 #      - name: Checkout
 #        uses: actions/checkout@v4

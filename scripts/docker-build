@@ -7,7 +7,7 @@ ARTIFACTS_DIR="./artifacts"
 BUILD_MODE=${BUILD_MODE:-"production"}
 
 title() {
-  echo -e "IC cosmos Reproducible Builds"
+  echo -e "IC Solana Reproducible Builds"
 }
 
 function usage() {
@@ -27,7 +27,7 @@ EOF
 function help() {
   cat <<EOF
 
-Helper script to facilitate the building of the canisters in the IC cosmos project in a reproducible way.
+Helper script to facilitate the building of the canisters in the IC Solana project in a reproducible way.
 
 NOTE: This requires a working Docker installation.
 EOF
@@ -66,10 +66,10 @@ function build() {
   echo "Building the '$project_name' canister in '$BUILD_MODE' mode..."
 
   # Build the canister
-  docker build --build-arg BUILD_MODE=$BUILD_MODE -t ic-cosmos-$project_name --target $target .
+  docker build --build-arg BUILD_MODE=$BUILD_MODE -t ic-solana-$project_name --target $target .
 
   local container_id
-  container_id=$(docker create "ic-cosmos-${project_name}")
+  container_id=$(docker create "ic-solana-${project_name}")
 
   # Ensure the artifacts directory exists
   mkdir -p "${ARTIFACTS_DIR}/${project_name}"
@@ -81,7 +81,7 @@ function build() {
   docker rm "$container_id"
 
   # Remove the Docker image to save space
-  docker rmi "ic-cosmos-${project_name}" --force
+  docker rmi "ic-solana-${project_name}" --force
 
   echo "Artifacts for '$project_name' have been copied to '${ARTIFACTS_DIR}/${project_name}/'"
 }

@@ -940,7 +940,7 @@ version = "0.1.0"
 dependencies = [
  "candid",
  "ic-cdk",
- "ic-cosmos",
+ "ic-solana",
 ]
 
 [[package]]
@@ -1635,78 +1635,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-cosmos"
-version = "0.3.0"
-dependencies = [
- "base64 0.22.1",
- "bech32 0.9.1",
- "bincode",
- "bs58",
- "candid",
- "flate2",
- "futures",
- "getrandom 0.2.16",
- "hex",
- "ic-canister-log",
- "ic-cdk",
- "ic-metrics-encoder",
- "ic-secp256k1",
- "ic-sha3",
- "proptest",
- "ripemd",
- "serde",
- "serde-big-array",
- "serde_bytes",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.12",
- "url",
-]
-
-[[package]]
-name = "ic-cosmos-rpc"
-version = "0.3.0"
-dependencies = [
- "candid",
- "ic-canister-log",
- "ic-cdk",
- "ic-cosmos",
- "ic-http-types",
- "ic-metrics-encoder",
- "ic-stable-structures",
- "ic-test-utilities-load-wasm",
- "pocket-ic",
- "serde",
- "serde_bytes",
- "serde_json",
- "test-utils",
- "url",
-]
-
-[[package]]
-name = "ic-cosmos-wallet"
-version = "0.3.0"
-dependencies = [
- "base64 0.22.1",
- "bech32 0.11.0",
- "bs58",
- "candid",
- "cosmrs",
- "cosmwasm-std",
- "hex",
- "ic-cdk",
- "ic-cosmos",
- "ic-cosmos-rpc",
- "ic-test-utilities-load-wasm",
- "ripemd",
- "serde",
- "serde_bytes",
- "serde_json",
- "sha2 0.10.9",
- "test-utils",
-]
-
-[[package]]
 name = "ic-http-types"
 version = "0.1.0"
 source = "git+https://github.com/dfinity/ic#ed3650da85f390130dedf55806da9337d796b799"
@@ -1746,6 +1674,78 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3715f0f4370e8ce6aa9805b81e915ef4420c9dfb5209c71489c27e6f98bd5d65"
 dependencies = [
  "sha3",
+]
+
+[[package]]
+name = "ic-solana"
+version = "0.3.0"
+dependencies = [
+ "base64 0.22.1",
+ "bech32 0.9.1",
+ "bincode",
+ "bs58",
+ "candid",
+ "flate2",
+ "futures",
+ "getrandom 0.2.16",
+ "hex",
+ "ic-canister-log",
+ "ic-cdk",
+ "ic-metrics-encoder",
+ "ic-secp256k1",
+ "ic-sha3",
+ "proptest",
+ "ripemd",
+ "serde",
+ "serde-big-array",
+ "serde_bytes",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.12",
+ "url",
+]
+
+[[package]]
+name = "ic-solana-rpc"
+version = "0.3.0"
+dependencies = [
+ "candid",
+ "ic-canister-log",
+ "ic-cdk",
+ "ic-http-types",
+ "ic-metrics-encoder",
+ "ic-solana",
+ "ic-stable-structures",
+ "ic-test-utilities-load-wasm",
+ "pocket-ic",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "test-utils",
+ "url",
+]
+
+[[package]]
+name = "ic-solana-wallet"
+version = "0.3.0"
+dependencies = [
+ "base64 0.22.1",
+ "bech32 0.11.0",
+ "bs58",
+ "candid",
+ "cosmrs",
+ "cosmwasm-std",
+ "hex",
+ "ic-cdk",
+ "ic-solana",
+ "ic-solana-rpc",
+ "ic-test-utilities-load-wasm",
+ "ripemd",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "sha2 0.10.9",
+ "test-utils",
 ]
 
 [[package]]

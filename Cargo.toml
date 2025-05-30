@@ -3,30 +3,30 @@ resolver = "2"
 members = [
     "src/e2e",
     "src/test-utils",
-    "src/ic-cosmos",
-    "src/ic-cosmos-rpc",
-    "src/ic-cosmos-wallet",
+    "src/ic-solana",
+    "src/ic-solana-rpc",
+    "src/ic-solana-wallet",
     "src/cosmos-utils",
 ]
 
 [workspace.package]
 version = "0.3.0"
-description = "Interact with cosmos blockchain from the Internet Computer."
-keywords = ["dfinity", "icp", "web3", "cosmos", "rpc"]
+description = "Interact with Solana blockchain from the Internet Computer."
+keywords = ["dfinity", "icp", "web3", "solana", "rpc"]
 authors = [
     "Vladyslav Korniienko <vk.tiamo@gmail.com>",
     "mFactory Team (https://mfactory.tech)",
 ]
-homepage = "https://github.com/mfactory-lab/ic-cosmos"
-repository = "https://github.com/mfactory-lab/ic-cosmos"
+homepage = "https://github.com/mfactory-lab/ic-solana"
+repository = "https://github.com/mfactory-lab/ic-solana"
 license = "Apache-2.0"
 edition = "2021"
 
 [workspace.dependencies]
 # local dependencies
-ic-cosmos = { path = "src/ic-cosmos" }
-ic-cosmos-rpc = { path = "src/ic-cosmos-rpc" }
-ic-cosmos-wallet = { path = "src/ic-cosmos-wallet" }
+ic-solana = { path = "src/ic-solana" }
+ic-solana-rpc = { path = "src/ic-solana-rpc" }
+ic-solana-wallet = { path = "src/ic-solana-wallet" }
 test-utils = { path = "src/test-utils" }
 
 # ic dependencies
@@ -74,5 +74,5 @@ opt-level = 'z'
 inherits = "release"
 
 #[patch.crates-io]
-## Required by `cosmos-client` v2.0
-#curve25519-dalek = { git = "https://github.com/cosmos-labs/curve25519-dalek.git", rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464" }
+## Required by `solana-client` v2.0
+#curve25519-dalek = { git = "https://github.com/solana-labs/curve25519-dalek.git", rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464" }

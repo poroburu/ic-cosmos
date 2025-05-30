@@ -40,7 +40,7 @@ examples: ## Run examples
 
 .PHONY: metrics
 metrics: ## Fetch metrics
-	@dfx canister call ic-cosmos-rpc getMetrics '()'
+	@dfx canister call ic-solana-rpc getMetrics '()'
 
 .PHONY: test
 test: build ## Run tests
