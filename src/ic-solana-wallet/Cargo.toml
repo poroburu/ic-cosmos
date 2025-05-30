@@ -15,12 +15,21 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 sha2 = { workspace = true }
 bs58 = { workspace = true }
-[dev-dependencies]
+serde_json = { workspace = true }
 base64 = { workspace = true }
-cosmrs = { workspace = true }
-#solana-sdk = "2.0"
-#solana-client = "2.0"
+hex = { workspace = true }
+bech32 = { workspace = true }
+ripemd = { workspace = true }
+cosmwasm-std = { version = "2.2", features = ["std", "stargate", "staking"] }
+
+[dev-dependencies]
 ic-test-utilities-load-wasm = { workspace = true }
 ic-solana-rpc = { workspace = true }
 serde_bytes = { workspace = true }
 test-utils = { workspace = true }
+cosmrs = { workspace = true }
+
+
+# Only include cosmrs for non-wasm targets since it pulls in tokio
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+cosmrs = { workspace = true }

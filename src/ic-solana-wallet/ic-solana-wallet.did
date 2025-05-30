@@ -50,11 +50,13 @@ type UiTransactionEncoding = variant {
 };
 service : (InitArgs) -> {
   address : () -> (text);
+  cosmosAddress : () -> (Result);
+  sendCosmosTransaction : (RpcServices, opt RpcConfig, text, text) -> (Result);
   sendTransaction : (
       RpcServices,
       opt RpcConfig,
       text,
       opt RpcSendTransactionConfig,
-    ) -> (Result) query;
-  signMessage : (blob) -> (blob) query;
+    ) -> (Result);
+  signMessage : (blob) -> (blob);
 }
