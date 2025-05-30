@@ -234,6 +234,46 @@ pub fn build_transaction() -> Result<(), Box<dyn Error>> {
     let (tx_bytes, sign_bytes) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, None)?;
     println!("Raw transaction (base64): {}", base64::encode(&tx_bytes));
     println!("Raw transaction (hex): 0x{}", hex::encode(&tx_bytes));
+
+    // Parse and print transaction as JSON
+    if let Ok(tx) = Tx::decode(&tx_bytes[..]) {
+        println!("Raw transaction (JSON):");
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&json!({
+                "body": {
+                    "messages": tx.body.as_ref().map(|b| &b.messages).unwrap_or(&vec![]).iter().map(|msg| {
+                        json!({
+                            "type_url": msg.type_url,
+                            "value_base64": base64::encode(&msg.value)
+                        })
+                    }).collect::<Vec<_>>(),
+                    "memo": tx.body.as_ref().map(|b| &b.memo).unwrap_or(&String::new()),
+                    "timeout_height": tx.body.as_ref().map(|b| b.timeout_height).unwrap_or(0)
+                },
+                "auth_info": {
+                    "signer_infos": tx.auth_info.as_ref().map(|a| &a.signer_infos).unwrap_or(&vec![]).iter().map(|si| {
+                        json!({
+                            "public_key": si.public_key.as_ref().map(|pk| json!({
+                                "type_url": pk.type_url,
+                                "value_base64": base64::encode(&pk.value)
+                            })),
+                            "sequence": si.sequence
+                        })
+                    }).collect::<Vec<_>>(),
+                    "fee": tx.auth_info.as_ref().and_then(|a| a.fee.as_ref()).map(|f| json!({
+                        "amount": f.amount.iter().map(|coin| json!({
+                            "denom": coin.denom,
+                            "amount": coin.amount
+                        })).collect::<Vec<_>>(),
+                        "gas_limit": f.gas_limit
+                    }))
+                },
+                "signatures": tx.signatures.iter().map(|sig| base64::encode(sig)).collect::<Vec<_>>()
+            }))?
+        );
+    }
+
     println!("\nCanonical sign bytes (base64): {}", base64::encode(&sign_bytes));
     println!("Canonical sign bytes (hex): 0x{}", hex::encode(&sign_bytes));
 
@@ -244,6 +284,45 @@ pub fn build_transaction() -> Result<(), Box<dyn Error>> {
     let (final_tx, _) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, Some(signature))?;
     println!("\nSigned transaction (base64): {}", base64::encode(&final_tx));
     println!("Signed transaction (hex): 0x{}", hex::encode(&final_tx));
+
+    // Parse and print signed transaction as JSON
+    if let Ok(tx) = Tx::decode(&final_tx[..]) {
+        println!("Signed transaction (JSON):");
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&json!({
+                "body": {
+                    "messages": tx.body.as_ref().map(|b| &b.messages).unwrap_or(&vec![]).iter().map(|msg| {
+                        json!({
+                            "type_url": msg.type_url,
+                            "value_base64": base64::encode(&msg.value)
+                        })
+                    }).collect::<Vec<_>>(),
+                    "memo": tx.body.as_ref().map(|b| &b.memo).unwrap_or(&String::new()),
+                    "timeout_height": tx.body.as_ref().map(|b| b.timeout_height).unwrap_or(0)
+                },
+                "auth_info": {
+                    "signer_infos": tx.auth_info.as_ref().map(|a| &a.signer_infos).unwrap_or(&vec![]).iter().map(|si| {
+                        json!({
+                            "public_key": si.public_key.as_ref().map(|pk| json!({
+                                "type_url": pk.type_url,
+                                "value_base64": base64::encode(&pk.value)
+                            })),
+                            "sequence": si.sequence
+                        })
+                    }).collect::<Vec<_>>(),
+                    "fee": tx.auth_info.as_ref().and_then(|a| a.fee.as_ref()).map(|f| json!({
+                        "amount": f.amount.iter().map(|coin| json!({
+                            "denom": coin.denom,
+                            "amount": coin.amount
+                        })).collect::<Vec<_>>(),
+                        "gas_limit": f.gas_limit
+                    }))
+                },
+                "signatures": tx.signatures.iter().map(|sig| base64::encode(sig)).collect::<Vec<_>>()
+            }))?
+        );
+    }
 
     println!("\nTo broadcast this transaction, run:");
     println!("cargo run -- broadcast \"{}\"", base64::encode(&final_tx));
