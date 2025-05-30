@@ -5,6 +5,13 @@ set -e
 VERSION=7.0.0
 POCKET_IC_BIN=pocket-ic
 
+# Target directories to install pocket-ic
+TARGET_DIRS=(
+  "src/ic-cosmos"
+  "src/ic-cosmos-rpc" 
+  "src/ic-cosmos-wallet"
+)
+
 if [ -f "$POCKET_IC_BIN" ]; then
   echo -e "$POCKET_IC_BIN exists. Path: $(pwd)/$POCKET_IC_BIN\n"
 else
@@ -27,3 +34,16 @@ else
 
   echo -e "Pocket IC binary downloaded and extracted successfully! Path: $(pwd)/$POCKET_IC_BIN\n"
 fi
+
+# Install pocket-ic binary into target directories
+echo "Installing pocket-ic binary into target directories..."
+for dir in "${TARGET_DIRS[@]}"; do
+  if [ -d "$dir" ]; then
+    cp "$POCKET_IC_BIN" "$dir/"
+    echo "  ✓ Installed in $dir/"
+  else
+    echo "  ⚠ Directory $dir does not exist, skipping..."
+  fi
+done
+
+echo -e "\nPocket IC installation complete!"
