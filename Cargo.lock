@@ -1681,6 +1681,7 @@ name = "ic-solana"
 version = "0.3.0"
 dependencies = [
  "base64 0.22.1",
+ "bech32 0.9.1",
  "bincode",
  "bs58",
  "candid",
@@ -1694,10 +1695,12 @@ dependencies = [
  "ic-secp256k1",
  "ic-sha3",
  "proptest",
+ "ripemd",
  "serde",
  "serde-big-array",
  "serde_bytes",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 2.0.12",
  "url",
 ]

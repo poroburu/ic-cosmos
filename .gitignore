@@ -26,6 +26,7 @@ dist/
 # others
 /tmp
 pocket-ic
+src/cosmos-utils/rawtx.json
 
 # built canisters
 *.wasm

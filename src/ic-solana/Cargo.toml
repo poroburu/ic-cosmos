@@ -10,6 +10,7 @@ edition = { workspace = true }
 
 [dependencies]
 base64 = { workspace = true }
+bech32 = "0.9"
 bincode = "1.3.3"
 bs58 = { workspace = true }
 candid = { workspace = true }
@@ -22,10 +23,12 @@ ic-cdk = { workspace = true }
 ic-crypto-secp256k1 = { workspace = true }
 ic-metrics-encoder = { workspace = true }
 ic-sha3 = "1"
+ripemd = "0.1"
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_bytes = { workspace = true }
 serde-big-array = "0.5.1"
+sha2 = "0.10"
 thiserror = { workspace = true }
 url = { workspace = true }
 
