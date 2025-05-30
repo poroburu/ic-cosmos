@@ -23,7 +23,6 @@ use ic_cosmos_rpc::{
     providers::{do_register_provider, do_unregister_provider, do_update_provider},
     state::{read_state, replace_state, InitArgs},
     types::{RegisterProviderArgs, UpdateProviderArgs},
-    utils::{parse_pubkey, parse_pubkeys, parse_signature, parse_signatures},
 };
 
 /// Returns the current health of the node.

@@ -350,14 +350,11 @@ pub struct EncodedConfirmedTransactionWithStatusMeta {
 
 #[cfg(test)]
 mod tests {
-    use bincode::{deserialize, serialize};
 
     use super::*;
-    use crate::types::{
-        blockhash::BlockHash,
-        instruction::{AccountMeta, Instruction},
-        UiParsedMessage,
-    };
+    use crate::types::
+        UiParsedMessage
+    ;
     // fn create_sample_transaction() -> Transaction {
     //     // let pk = PrivateKey::deserialize_sec1(&[
     //     //     255, 101, 36, 24, 124, 23, 167, 21, 132, 204, 155, 5, 185, 58, 121, 75, 156, 227, 116, 193, 215, 38, 142,

@@ -63,14 +63,7 @@ pub fn public_key_to_cosmos_address(public_key: &str) -> Result<String, Box<dyn 
     Ok(encoded)
 }
 
-pub fn get_sign_bytes(tx_body: &TxBody, auth_info: &AuthInfo) -> Result<Vec<u8>, Box<dyn Error>> {
-    let tx = Tx {
-        body: Some(tx_body.clone()),
-        auth_info: Some(auth_info.clone()),
-        signatures: vec![],
-    };
-    Ok(tx.encode_to_vec())
-}
+
 
 pub fn create_send_transaction(
     from_address: &str,

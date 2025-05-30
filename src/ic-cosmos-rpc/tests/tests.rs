@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use ic_cosmos::{
     metrics::{MetricRpcHost, Metrics},
     request::RpcRequest,
-    rpc_client::{RpcConfig, RpcResult, RpcServices},
+    rpc_client::RpcServices,
     types::Cluster,
 };
 use ic_cosmos_rpc::{auth::Auth, state::InitArgs, types::RegisterProviderArgs};

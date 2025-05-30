@@ -96,9 +96,7 @@ impl<P: Serialize> JsonRpcRequest<P> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
 
-    use super::*;
 
     // TODO: add tests for all requests
     //     #[test]

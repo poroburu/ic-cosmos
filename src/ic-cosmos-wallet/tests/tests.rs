@@ -3,11 +3,9 @@ use std::str::FromStr;
 use cosmrs::bank::MsgSend;
 use cosmrs::crypto::secp256k1::VerifyingKey;
 use cosmrs::crypto::PublicKey;
-use cosmrs::proto::cosmos::tx::v1beta1::TxRaw;
-use cosmrs::tendermint::chain::Id;
 use cosmrs::tendermint::{block, chain};
-use cosmrs::tx::{self, Body, Msg, Raw, SignDoc};
-use cosmrs::{AccountId, Coin, Denom};
+use cosmrs::tx::{self, Msg, Raw, SignDoc};
+use cosmrs::Coin;
 use ic_cosmos::{rpc_client::RpcServices, types::Pubkey};
 use test_utils::MockOutcallBuilder;
 
