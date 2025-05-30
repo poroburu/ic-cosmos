@@ -29,7 +29,6 @@ serde_bytes = { workspace = true }
 test-utils = { workspace = true }
 cosmrs = { workspace = true }
 
-
 # Only include cosmrs for non-wasm targets since it pulls in tokio
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 cosmrs = { workspace = true }

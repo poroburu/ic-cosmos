@@ -229,76 +229,230 @@ fn parse_account_info_from_abci(response_value: &str) -> Result<(u64, u64), Stri
     Err("No valid account found in response".to_string())
 }
 
-/// Create a Cosmos bank send message using cosmwasm_std types
-fn create_bank_send_msg(_from_address: &str, to_address: &str, amount: Vec<Coin>) -> CosmosMsg {
-    CosmosMsg::Bank(BankMsg::Send {
-        to_address: to_address.to_string(),
-        amount,
-    })
+/// Create sign document bytes for Cosmos transaction signing using manual protobuf encoding
+fn create_sign_doc_bytes(transaction: &CosmosTransaction, public_key: &[u8]) -> Result<Vec<u8>, String> {
+    // Helper function to encode varint
+    fn encode_varint(value: u64) -> Vec<u8> {
+        let mut result = Vec::new();
+        let mut val = value;
+        while val >= 0x80 {
+            result.push(((val & 0x7F) | 0x80) as u8);
+            val >>= 7;
+        }
+        result.push(val as u8);
+        result
+    }
+
+    // Helper function to encode length-delimited field
+    fn encode_length_delimited(tag: u8, data: &[u8]) -> Vec<u8> {
+        let mut result = vec![tag];
+        result.extend(encode_varint(data.len() as u64));
+        result.extend(data);
+        result
+    }
+
+    // Helper function to encode string field
+    fn encode_string(tag: u8, value: &str) -> Vec<u8> {
+        encode_length_delimited(tag, value.as_bytes())
+    }
+
+    // Helper function to encode uint64 field
+    fn encode_uint64(tag: u8, value: u64) -> Vec<u8> {
+        let mut result = vec![tag];
+        result.extend(encode_varint(value));
+        result
+    }
+
+    // Create MsgSend protobuf bytes
+    let mut msg_send_bytes = Vec::new();
+    msg_send_bytes.extend(encode_string(0x0a, &transaction.from_address)); // from_address = 1
+    msg_send_bytes.extend(encode_string(0x12, &transaction.to_address)); // to_address = 2
+    
+    // Encode amount array (field 3)
+    for coin in &transaction.amount {
+        let mut coin_bytes = Vec::new();
+        coin_bytes.extend(encode_string(0x0a, &coin.denom)); // denom = 1
+        coin_bytes.extend(encode_string(0x12, &coin.amount.to_string())); // amount = 2
+        msg_send_bytes.extend(encode_length_delimited(0x1a, &coin_bytes)); // amount = 3
+    }
+
+    // Create Any message for MsgSend
+    let type_url = "/cosmos.bank.v1beta1.MsgSend";
+    let mut msg_any_bytes = Vec::new();
+    msg_any_bytes.extend(encode_string(0x0a, type_url)); // type_url = 1
+    msg_any_bytes.extend(encode_length_delimited(0x12, &msg_send_bytes)); // value = 2
+
+    // Create TxBody
+    let mut tx_body_bytes = Vec::new();
+    tx_body_bytes.extend(encode_length_delimited(0x0a, &msg_any_bytes)); // messages = 1
+    tx_body_bytes.extend(encode_string(0x12, &transaction.memo)); // memo = 2
+    tx_body_bytes.extend(encode_uint64(0x18, 0)); // timeout_height = 3
+
+    // Create PubKey
+    let mut pub_key_bytes = Vec::new();
+    pub_key_bytes.extend(encode_length_delimited(0x0a, public_key)); // key = 1
+
+    // Create Any message for PubKey
+    let pub_key_type_url = "/cosmos.crypto.secp256k1.PubKey";
+    let mut pub_key_any_bytes = Vec::new();
+    pub_key_any_bytes.extend(encode_string(0x0a, pub_key_type_url)); // type_url = 1
+    pub_key_any_bytes.extend(encode_length_delimited(0x12, &pub_key_bytes)); // value = 2
+
+    // Create Fee
+    let mut fee_bytes = Vec::new();
+    // Encode fee amount array (field 1)
+    for coin in &transaction.fee {
+        let mut coin_bytes = Vec::new();
+        coin_bytes.extend(encode_string(0x0a, &coin.denom)); // denom = 1
+        coin_bytes.extend(encode_string(0x12, &coin.amount.to_string())); // amount = 2
+        fee_bytes.extend(encode_length_delimited(0x0a, &coin_bytes)); // amount = 1
+    }
+    fee_bytes.extend(encode_uint64(0x10, transaction.gas_limit)); // gas_limit = 2
+    fee_bytes.extend(encode_string(0x1a, "")); // payer = 3
+    fee_bytes.extend(encode_string(0x22, "")); // granter = 4
+
+    // Create ModeInfo Single
+    let mut mode_info_single_bytes = Vec::new();
+    mode_info_single_bytes.extend(encode_uint64(0x08, 1)); // mode = SIGN_MODE_DIRECT = 1
+
+    // Create ModeInfo
+    let mut mode_info_bytes = Vec::new();
+    mode_info_bytes.extend(encode_length_delimited(0x0a, &mode_info_single_bytes)); // single = 1
+
+    // Create SignerInfo
+    let mut signer_info_bytes = Vec::new();
+    signer_info_bytes.extend(encode_length_delimited(0x0a, &pub_key_any_bytes)); // public_key = 1
+    signer_info_bytes.extend(encode_length_delimited(0x12, &mode_info_bytes)); // mode_info = 2
+    signer_info_bytes.extend(encode_uint64(0x18, transaction.sequence)); // sequence = 3
+
+    // Create AuthInfo
+    let mut auth_info_bytes = Vec::new();
+    auth_info_bytes.extend(encode_length_delimited(0x0a, &signer_info_bytes)); // signer_infos = 1
+    auth_info_bytes.extend(encode_length_delimited(0x12, &fee_bytes)); // fee = 2
+
+    // Create SignDoc
+    let mut sign_doc_bytes = Vec::new();
+    sign_doc_bytes.extend(encode_length_delimited(0x0a, &tx_body_bytes)); // body_bytes = 1
+    sign_doc_bytes.extend(encode_length_delimited(0x12, &auth_info_bytes)); // auth_info_bytes = 2
+    sign_doc_bytes.extend(encode_string(0x1a, &transaction.chain_id)); // chain_id = 3
+    sign_doc_bytes.extend(encode_uint64(0x20, transaction.account_number)); // account_number = 4
+
+    Ok(sign_doc_bytes)
 }
 
-/// Create sign document bytes for Cosmos transaction signing
-fn create_sign_doc_bytes(transaction: &CosmosTransaction, _public_key: &[u8]) -> Result<Vec<u8>, String> {
-    // Create the message using cosmwasm_std types
-    let msg = create_bank_send_msg(
-        &transaction.from_address,
-        &transaction.to_address,
-        transaction.amount.clone(),
-    );
-
-    // For signing, we need to create a sign doc structure
-    // This is a simplified approach using JSON representation
-    let sign_doc = serde_json::json!({
-        "account_number": transaction.account_number.to_string(),
-        "chain_id": transaction.chain_id,
-        "fee": {
-            "amount": transaction.fee,
-            "gas": transaction.gas_limit.to_string()
-        },
-        "memo": transaction.memo,
-        "msgs": [msg],
-        "sequence": transaction.sequence.to_string()
-    });
-
-    serde_json::to_string(&sign_doc)
-        .map(|s| s.into_bytes())
-        .map_err(|e| format!("Failed to create sign doc: {}", e))
-}
-
-/// Build final transaction for broadcasting
+/// Build final transaction for broadcasting using manual protobuf encoding
 fn build_transaction_for_broadcast(
     transaction: &CosmosTransaction,
     public_key: &[u8],
     signature: &[u8],
 ) -> Result<String, String> {
-    // Create transaction using cosmwasm_std types
-    let msg = create_bank_send_msg(
-        &transaction.from_address,
-        &transaction.to_address,
-        transaction.amount.clone(),
-    );
-
-    // Build the transaction structure that can be broadcasted
-    let tx_json = serde_json::json!({
-        "type": "cosmos-sdk/StdTx",
-        "value": {
-            "msg": [msg],
-            "fee": {
-                "amount": transaction.fee,
-                "gas": transaction.gas_limit.to_string()
-            },
-            "signatures": [{
-                "pub_key": {
-                    "type": "tendermint/PubKeySecp256k1",
-                    "value": STANDARD.encode(public_key)
-                },
-                "signature": STANDARD.encode(signature)
-            }],
-            "memo": transaction.memo
+    // Helper function to encode varint
+    fn encode_varint(value: u64) -> Vec<u8> {
+        let mut result = Vec::new();
+        let mut val = value;
+        while val >= 0x80 {
+            result.push(((val & 0x7F) | 0x80) as u8);
+            val >>= 7;
         }
-    });
+        result.push(val as u8);
+        result
+    }
 
-    serde_json::to_string(&tx_json).map_err(|e| format!("Failed to serialize transaction: {}", e))
+    // Helper function to encode length-delimited field
+    fn encode_length_delimited(tag: u8, data: &[u8]) -> Vec<u8> {
+        let mut result = vec![tag];
+        result.extend(encode_varint(data.len() as u64));
+        result.extend(data);
+        result
+    }
+
+    // Helper function to encode string field
+    fn encode_string(tag: u8, value: &str) -> Vec<u8> {
+        encode_length_delimited(tag, value.as_bytes())
+    }
+
+    // Helper function to encode uint64 field
+    fn encode_uint64(tag: u8, value: u64) -> Vec<u8> {
+        let mut result = vec![tag];
+        result.extend(encode_varint(value));
+        result
+    }
+
+    // Create MsgSend protobuf bytes
+    let mut msg_send_bytes = Vec::new();
+    msg_send_bytes.extend(encode_string(0x0a, &transaction.from_address)); // from_address = 1
+    msg_send_bytes.extend(encode_string(0x12, &transaction.to_address)); // to_address = 2
+    
+    // Encode amount array (field 3)
+    for coin in &transaction.amount {
+        let mut coin_bytes = Vec::new();
+        coin_bytes.extend(encode_string(0x0a, &coin.denom)); // denom = 1
+        coin_bytes.extend(encode_string(0x12, &coin.amount.to_string())); // amount = 2
+        msg_send_bytes.extend(encode_length_delimited(0x1a, &coin_bytes)); // amount = 3
+    }
+
+    // Create Any message for MsgSend
+    let type_url = "/cosmos.bank.v1beta1.MsgSend";
+    let mut msg_any_bytes = Vec::new();
+    msg_any_bytes.extend(encode_string(0x0a, type_url)); // type_url = 1
+    msg_any_bytes.extend(encode_length_delimited(0x12, &msg_send_bytes)); // value = 2
+
+    // Create TxBody
+    let mut tx_body_bytes = Vec::new();
+    tx_body_bytes.extend(encode_length_delimited(0x0a, &msg_any_bytes)); // messages = 1
+    tx_body_bytes.extend(encode_string(0x12, &transaction.memo)); // memo = 2
+    tx_body_bytes.extend(encode_uint64(0x18, 0)); // timeout_height = 3
+
+    // Create PubKey
+    let mut pub_key_bytes = Vec::new();
+    pub_key_bytes.extend(encode_length_delimited(0x0a, public_key)); // key = 1
+
+    // Create Any message for PubKey
+    let pub_key_type_url = "/cosmos.crypto.secp256k1.PubKey";
+    let mut pub_key_any_bytes = Vec::new();
+    pub_key_any_bytes.extend(encode_string(0x0a, pub_key_type_url)); // type_url = 1
+    pub_key_any_bytes.extend(encode_length_delimited(0x12, &pub_key_bytes)); // value = 2
+
+    // Create Fee
+    let mut fee_bytes = Vec::new();
+    // Encode fee amount array (field 1)
+    for coin in &transaction.fee {
+        let mut coin_bytes = Vec::new();
+        coin_bytes.extend(encode_string(0x0a, &coin.denom)); // denom = 1
+        coin_bytes.extend(encode_string(0x12, &coin.amount.to_string())); // amount = 2
+        fee_bytes.extend(encode_length_delimited(0x0a, &coin_bytes)); // amount = 1
+    }
+    fee_bytes.extend(encode_uint64(0x10, transaction.gas_limit)); // gas_limit = 2
+    fee_bytes.extend(encode_string(0x1a, "")); // payer = 3
+    fee_bytes.extend(encode_string(0x22, "")); // granter = 4
+
+    // Create ModeInfo Single
+    let mut mode_info_single_bytes = Vec::new();
+    mode_info_single_bytes.extend(encode_uint64(0x08, 1)); // mode = SIGN_MODE_DIRECT = 1
+
+    // Create ModeInfo
+    let mut mode_info_bytes = Vec::new();
+    mode_info_bytes.extend(encode_length_delimited(0x0a, &mode_info_single_bytes)); // single = 1
+
+    // Create SignerInfo
+    let mut signer_info_bytes = Vec::new();
+    signer_info_bytes.extend(encode_length_delimited(0x0a, &pub_key_any_bytes)); // public_key = 1
+    signer_info_bytes.extend(encode_length_delimited(0x12, &mode_info_bytes)); // mode_info = 2
+    signer_info_bytes.extend(encode_uint64(0x18, transaction.sequence)); // sequence = 3
+
+    // Create AuthInfo
+    let mut auth_info_bytes = Vec::new();
+    auth_info_bytes.extend(encode_length_delimited(0x0a, &signer_info_bytes)); // signer_infos = 1
+    auth_info_bytes.extend(encode_length_delimited(0x12, &fee_bytes)); // fee = 2
+
+    // Create final Tx
+    let mut tx_bytes = Vec::new();
+    tx_bytes.extend(encode_length_delimited(0x0a, &tx_body_bytes)); // body = 1
+    tx_bytes.extend(encode_length_delimited(0x12, &auth_info_bytes)); // auth_info = 2
+    tx_bytes.extend(encode_length_delimited(0x1a, signature)); // signatures = 3
+
+    // Encode as base64
+    Ok(STANDARD.encode(&tx_bytes))
 }
 
 /// Returns the public key of the Solana wallet associated with the caller.
@@ -431,8 +585,8 @@ pub async fn cosmos_address() -> RpcResult<String> {
 pub async fn send_cosmos_transaction(
     source: RpcServices,
     config: Option<RpcConfig>,
-    raw_transaction: String,
     chain_id: String,
+    raw_transaction: String,
 ) -> RpcResult<String> {
     let caller = validate_caller_not_anonymous();
     let cos_canister = read_state(|s| s.cos_canister);
@@ -465,7 +619,7 @@ pub async fn send_cosmos_transaction(
     let query_data = format!("0a{:02x}{}", from_address.len(), hex::encode(from_address.as_bytes()));
     let account_info_result = ic_cdk::call::<_, (RpcResult<ic_solana::types::ABCIQueryResult>,)>(
         cos_canister,
-        "cos_getAbciQuery",
+        "sol_getAbciQuery",
         (
             &source,
             config.clone(),
@@ -594,15 +748,13 @@ pub async fn send_cosmos_transaction(
     };
 
     // Build final transaction for broadcast
-    let tx_string = build_transaction_for_broadcast(&transaction, &pk, &signature)
+    let tx_base64 = build_transaction_for_broadcast(&transaction, &pk, &signature)
         .map_err(|e| ic_solana::rpc_client::RpcError::ParseError(e))?;
-
-    let tx_base64 = STANDARD.encode(tx_string.as_bytes());
 
     // Broadcast the transaction
     let broadcast_result = ic_cdk::call::<_, (RpcResult<ic_solana::types::BroadcastTxResult>,)>(
         cos_canister,
-        "cos_getBroadcastTxSync",
+        "sol_getBroadcastTxSync",
         (&source, config, tx_base64),
     )
     .await

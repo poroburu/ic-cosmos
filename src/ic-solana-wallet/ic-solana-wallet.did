@@ -51,7 +51,9 @@ type UiTransactionEncoding = variant {
 service : (InitArgs) -> {
   address : () -> (text);
   cosmosAddress : () -> (Result);
-  sendCosmosTransaction : (RpcServices, opt RpcConfig, text, text) -> (Result);
+  sendCosmosTransaction : (RpcServices, opt RpcConfig, text, text) -> (
+      Result,
+    ) query;
   sendTransaction : (
       RpcServices,
       opt RpcConfig,

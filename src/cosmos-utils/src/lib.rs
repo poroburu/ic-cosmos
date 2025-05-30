@@ -227,9 +227,9 @@ pub fn get_signature_from_canister(sign_bytes: &[u8]) -> Result<Vec<u8>, Box<dyn
     Ok(signature)
 }
 
-pub fn print_transaction_json(tx_bytes: &[u8], title: &str) -> Result<String, Box<dyn Error>> {
+pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Result<String, Box<dyn Error>> {
     if let Ok(tx) = Tx::decode(&tx_bytes[..]) {
-        let json_output = serde_json::to_string_pretty(&json!({
+        let json_obj = json!({
             "body": {
                 "messages": tx.body.as_ref().map(|b| &b.messages).unwrap_or(&vec![]).iter().map(|msg| {
                     // Decode specific message types
@@ -285,10 +285,18 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str) -> Result<String, Bo
                 "tip": null
             },
             "signatures": [] // Empty for unsigned transactions
-        }))?;
+        });
 
-        println!("{}:", title);
-        println!("{}", json_output);
+        let json_output = if pretty {
+            serde_json::to_string_pretty(&json_obj)?
+        } else {
+            serde_json::to_string(&json_obj)?
+        };
+
+        if !title.is_empty() {
+            println!("{}:", title);
+            println!("{}", json_output);
+        }
         Ok(json_output)
     } else {
         Err("Failed to decode transaction".into())
@@ -305,7 +313,7 @@ pub fn generate_raw_transaction() -> Result<(), Box<dyn Error>> {
     println!("Raw transaction (hex): 0x{}", hex::encode(&tx_bytes));
 
     // Print the transaction JSON and save to file
-    let json_output = print_transaction_json(&tx_bytes, "Raw transaction (JSON)")?;
+    let json_output = print_transaction_json(&tx_bytes, "Raw transaction (JSON)", false)?;
 
     // Save to file
     std::fs::write("rawtx.json", &json_output)?;
@@ -326,7 +334,7 @@ pub fn build_transaction() -> Result<(), Box<dyn Error>> {
     println!("Raw transaction (hex): 0x{}", hex::encode(&tx_bytes));
 
     // Use the new function to print transaction JSON
-    print_transaction_json(&tx_bytes, "Raw transaction (JSON)")?;
+    print_transaction_json(&tx_bytes, "Raw transaction (JSON)", true)?;
 
     println!("\nCanonical sign bytes (base64): {}", base64::encode(&sign_bytes));
     println!("Canonical sign bytes (hex): 0x{}", hex::encode(&sign_bytes));
@@ -340,7 +348,7 @@ pub fn build_transaction() -> Result<(), Box<dyn Error>> {
     println!("Signed transaction (hex): 0x{}", hex::encode(&final_tx));
 
     // Use the new function to print signed transaction JSON
-    print_transaction_json(&final_tx, "Signed transaction (JSON)")?;
+    print_transaction_json(&final_tx, "Signed transaction (JSON)", true)?;
 
     println!("\nTo broadcast this transaction, run:");
     println!("cargo run -- broadcast \"{}\"", base64::encode(&final_tx));
