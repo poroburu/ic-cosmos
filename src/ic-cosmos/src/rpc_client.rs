@@ -1,5 +1,6 @@
 use std::{cell::RefCell, collections::BTreeSet};
 
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use hex;
 use ic_canister_log::log;
 use ic_cdk::api::management_canister::http_request::{
@@ -527,7 +528,7 @@ fn remove_0x_prefix(hash: String) -> String {
 fn convert_hex_to_base64(hash: String) -> Result<String, RpcError> {
     let hash = remove_0x_prefix(hash);
     let bytes = hex::decode(hash).map_err(|e| RpcError::ParseError(format!("Invalid hex hash: {}", e)))?;
-    let base64_hash = base64::encode(bytes);
+    let base64_hash = STANDARD.encode(bytes);
     Ok(base64_hash)
 }
 

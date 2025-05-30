@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use cosmrs::bank::MsgSend;
 use cosmrs::crypto::secp256k1::VerifyingKey;
 use cosmrs::crypto::PublicKey;
@@ -58,10 +59,10 @@ fn test_sign_cosmos_message() {
     assert!(is_valid);
 
     println!("signature: {:?}", signature);
-    println!("message(base64): {:?}", base64::encode(&message));
-    println!("signature(base64): {:?}", base64::encode(&signature));
+    println!("message(base64): {:?}", STANDARD.encode(&message));
+    println!("signature(base64): {:?}", STANDARD.encode(&signature));
     let signed_tx = get_signed_tx_bytes(address, signature).unwrap();
-    println!("signed_tx(base64): {:?}", base64::encode(&signed_tx));
+    println!("signed_tx(base64): {:?}", STANDARD.encode(&signed_tx));
 }
 // common transaction data
 fn sign_doc_data(address: String) -> SignDoc {

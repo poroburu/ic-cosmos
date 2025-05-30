@@ -1,6 +1,6 @@
 //! Core Cosmos utilities logic extracted from main.rs for testability and reuse.
 
-use base64;
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use bech32::{self, ToBase32};
 use bs58;
 use cosmos_sdk_proto::cosmos::{
@@ -62,8 +62,6 @@ pub fn public_key_to_cosmos_address(public_key: &str) -> Result<String, Box<dyn 
     let encoded = bech32::encode("cosmos", data.to_base32(), bech32::Variant::Bech32)?;
     Ok(encoded)
 }
-
-
 
 pub fn create_send_transaction(
     from_address: &str,
@@ -241,7 +239,7 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Res
                             } else {
                                 json!({
                                     "@type": msg.type_url,
-                                    "value": base64::encode(&msg.value)
+                                    "value": STANDARD.encode(&msg.value)
                                 })
                             }
                         },
@@ -249,7 +247,7 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Res
                             // For unknown message types, fall back to base64 encoding
                             json!({
                                 "@type": msg.type_url,
-                                "value": base64::encode(&msg.value)
+                                "value": STANDARD.encode(&msg.value)
                             })
                         }
                     }
@@ -302,7 +300,7 @@ pub fn generate_raw_transaction() -> Result<(), Box<dyn Error>> {
     println!("Cosmos address: {}", cosmos_address);
 
     let (tx_bytes, sign_bytes) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, None)?;
-    println!("Raw transaction (base64): {}", base64::encode(&tx_bytes));
+    println!("Raw transaction (base64): {}", STANDARD.encode(&tx_bytes));
     println!("Raw transaction (hex): 0x{}", hex::encode(&tx_bytes));
 
     // Print the transaction JSON and save to file
@@ -312,7 +310,7 @@ pub fn generate_raw_transaction() -> Result<(), Box<dyn Error>> {
     std::fs::write("rawtx.json", &json_output)?;
     println!("\nRaw transaction JSON saved to rawtx.json");
 
-    println!("\nCanonical sign bytes (base64): {}", base64::encode(&sign_bytes));
+    println!("\nCanonical sign bytes (base64): {}", STANDARD.encode(&sign_bytes));
     println!("Canonical sign bytes (hex): 0x{}", hex::encode(&sign_bytes));
 
     Ok(())
@@ -323,13 +321,13 @@ pub fn build_transaction() -> Result<(), Box<dyn Error>> {
     let cosmos_address = public_key_to_cosmos_address(&public_key)?;
     println!("Cosmos address: {}", cosmos_address);
     let (tx_bytes, sign_bytes) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, None)?;
-    println!("Raw transaction (base64): {}", base64::encode(&tx_bytes));
+    println!("Raw transaction (base64): {}", STANDARD.encode(&tx_bytes));
     println!("Raw transaction (hex): 0x{}", hex::encode(&tx_bytes));
 
     // Use the new function to print transaction JSON
     print_transaction_json(&tx_bytes, "Raw transaction (JSON)", true)?;
 
-    println!("\nCanonical sign bytes (base64): {}", base64::encode(&sign_bytes));
+    println!("\nCanonical sign bytes (base64): {}", STANDARD.encode(&sign_bytes));
     println!("Canonical sign bytes (hex): 0x{}", hex::encode(&sign_bytes));
 
     println!("\nGetting signature from canister...");
@@ -337,14 +335,14 @@ pub fn build_transaction() -> Result<(), Box<dyn Error>> {
 
     println!("\nCreating signed transaction...");
     let (final_tx, _) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, Some(signature))?;
-    println!("\nSigned transaction (base64): {}", base64::encode(&final_tx));
+    println!("\nSigned transaction (base64): {}", STANDARD.encode(&final_tx));
     println!("Signed transaction (hex): 0x{}", hex::encode(&final_tx));
 
     // Use the new function to print signed transaction JSON
     print_transaction_json(&final_tx, "Signed transaction (JSON)", true)?;
 
     println!("\nTo broadcast this transaction, run:");
-    println!("cargo run -- broadcast \"{}\"", base64::encode(&final_tx));
+    println!("cargo run -- broadcast \"{}\"", STANDARD.encode(&final_tx));
 
     Ok(())
 }
@@ -359,7 +357,7 @@ pub fn send_signed_transaction(signature_blob: &str) -> Result<(), Box<dyn Error
         .map(|s| u8::from_str_radix(s, 16).unwrap_or(0))
         .collect::<Vec<u8>>();
     let (final_tx, _) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, Some(signature))?;
-    println!("{}", base64::encode(&final_tx));
+    println!("{}", STANDARD.encode(&final_tx));
     Ok(())
 }
 
@@ -452,7 +450,7 @@ pub fn get_account_info(address: &str) -> Result<(u64, u64), Box<dyn Error>> {
         .as_str()
         .ok_or_else(|| "Failed to get account info")?;
 
-    let decoded = base64::decode(result)?;
+    let decoded = STANDARD.decode(result)?;
     println!("Decoded value (hex): {}", hex::encode(&decoded));
 
     // First parse the QueryAccountResponse
@@ -524,7 +522,7 @@ pub fn analyze_account_response(address: &str) -> Result<String, Box<dyn Error>>
 
     analysis.push_str(&format!("Raw response value (base64): {}\n", result));
 
-    let decoded = base64::decode(result)?;
+    let decoded = STANDARD.decode(result)?;
     analysis.push_str(&format!("Decoded response (hex): {}\n", hex::encode(&decoded)));
     analysis.push_str(&format!("Decoded response length: {} bytes\n\n", decoded.len()));
 

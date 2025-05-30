@@ -1,5 +1,5 @@
 [workspace]
-recosver = "2"
+resolver = "2"
 members = [
     "src/e2e",
     "src/test-utils",
