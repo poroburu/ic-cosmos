@@ -60,10 +60,10 @@ Build and deploy canisters:
 
 ```bash
 # Deploy the `cosmos_rpc` canister locally
-dfx deploy cosmos_rpc --argument '(record {})'
+dfx deploy cosmos_rpc_demo --argument '(record {})'
 
 # Deploy the `cosmos_wallet` canister locally
-dfx deploy cosmos_wallet --argument "(record { cos_canister = opt principal \"`dfx canister id cosmos_rpc`\"; schnorr_key = null })"
+dfx deploy cosmos_wallet --argument "(record { cos_canister = opt principal \"`dfx canister id cosmos_rpc_demo`\"; ecdsa_key = opt \"dfx_test_key\" })"
 ```
 
 All the canisters will be deployed to the local network with their fixed canister IDs.
@@ -78,41 +78,41 @@ Replace `{asset_canister_id}` with the actual canister's ID generated during dep
 
 ## Examples
 
-Use the Cosmos mainnet cluster:
+Use the Cosmos mainnet:
 
 ```bash
-dfx canister call cosmos_rpc cos_getHealth '(variant{Mainnet},null)' --wallet $(dfx identity get-wallet)
+dfx canister call cosmos_rpc_demo cos_getHealth '(variant{Mainnet},null)'
 ```
 
-Use the Cosmos devnet cluster:
+Use the Cosmos provider testnet:
 
 ```bash
-dfx canister call cosmos_rpc cos_getHealth '(variant{Devnet},null)' --wallet $(dfx identity get-wallet)
+dfx canister call cosmos_rpc_demo cos_getHealth '(variant{Testnet},null)'
 ```
 
 Use a single custom RPC:
 
 ```bash
-dfx canister call cosmos_rpc cos_getHealth '(variant{Custom=vec{record{network="https://mainnet.helius-rpc.com/"}}},null)' --wallet $(dfx identity get-wallet)
+dfx canister call cosmos_rpc_demo cos_getHealth '(variant{Custom=vec{record{network="https://rpc.testcosmos.directory/cosmosicsprovidertestnet"}}},null)'
 ```
 
 Use multiple custom RPCs:
 
 ```bash
-dfx canister call cosmos_rpc cos_getHealth '(variant{Custom=vec{record{network="mainnet"},record{network="https://mainnet.helius-rpc.com/"}}},null)' --wallet $(dfx identity get-wallet)
+dfx canister call cosmos_rpc_demo cos_getHealth '(variant { Custom = vec { record { network = "https://rpc.testcosmos.directory/cosmosicsprovidertestnet" }; record { network = "https://cosmos-testnet-rpc.polkachu.com/" } } }, null)'
 ```
 
 Use a single RPC provider (predefined providers: mainnet|m, devnet|d, testnet|t):
 
-```bash 
-dfx canister call cosmos_rpc cos_getHealth '(variant{Provider=vec{"mainnet"}},null)' --wallet $(dfx identity get-wallet)
+```bash
+dfx canister call cosmos_rpc_demo cos_getHealth '(variant{Provider=vec{"mainnet"}},null)' --wallet $(dfx identity get-wallet)
 ```
 
 ## Components
 
 ### [RPC Canister](./src/ic-cosmos-rpc)
 
-The **RPC Canister** enables communication with the Cosmos blockchain, using [HTTPS outcalls](https://internetcomputer.org/https-outcalls) to transmit raw transactions and messages via on-chain APIs of [Cosmos JSON RPC](https://cosmos.com/docs/rpc) providers, for example, [Helius](https://www.helius.dev/) or [Quicknode](https://www.quicknode.com/).
+The **RPC Canister** enables communication with the Cosmos blockchain, using [HTTPS outcalls](https://internetcomputer.org/https-outcalls) to transmit raw transactions and messages via on-chain APIs of [Cosmos JSON RPC](https://docs.cometbft.com/v0.38/rpc/) providers, for example, [Cosmos.Directory](https://cosmos.directory/) or [Polkachu](https://www.polkachu.com/).
 
 Key functionalities include:
 
@@ -122,16 +122,16 @@ Key functionalities include:
 
 [//]: # (The RPC Canister runs on the 34-node [fiduciary subnet]&#40;https://internetcomputer.org/docs/current/references/subnets/subnet-types#fiduciary-subnets&#41;)
 
-[//]: # (with the following principal: [bd3sg-teaaa-aaaaa-qaaba-cai]&#40;https://dashboard.internetcomputer.org/canister/bd3sg-teaaa-aaaaa-qaaba-cai&#41;.)
+[//]: # (with the following principal: [TBD]&#40;https://dashboard.internetcomputer.org/canister/TBD#41;.)
 
 ### [Wallet Canister](./src/ic-cosmos-wallet)
 
-The **Wallet Canister** is used for managing addresses and for securely signing transactions/messages for the Cosmos blockchain using the [threshold Schnorr API](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/signatures/signing-messages-t-schnorr).
+The **Wallet Canister** is used for managing addresses and for securely signing transactions/messages for the Cosmos blockchain using the [threshold ECDSA API](https://internetcomputer.org/docs/building-apps/network-features/signatures/t-ecdsa).
 
 Key functionalities include:
 
-1. Generating a Cosmos public key (Ed25519) for a user on the Internet Computer (ICP).
-2. Signing messages using distributed keys based on the `Threshold Schnorr` protocol.
+1. Generating a Cosmos public key (Secp256k1) for a user on the Internet Computer (ICP).
+2. Signing messages using distributed keys based on the `Threshold ECDSA` protocol.
 3. Signing and sending raw transactions to the Cosmos blockchain via the [RPC Canister](#rpc-canister).
 
 ### [IC-Cosmos](./src/ic-cosmos)
@@ -155,7 +155,7 @@ Compare the generated SHA-256 hash with the hash provided in the repository to v
 ## Learn more
 
 - [Candid Interface](https://github.com/mfactory-lab/ic-cosmos/blob/main/src/ic-cosmos-rpc/ic-cosmos-rpc.did)
-- [Cosmos JSON RPC API](https://cosmos.com/docs/rpc)
+- [Cosmos JSON RPC API](https://docs.cometbft.com/v0.38/rpc/)
 - [Internet Computer Developer Docs](https://internetcomputer.org/docs/current/developer-docs/)
 - [DFINITY SDK Documentation](https://sdk.dfinity.org/docs/)
 - [Internet Computer HTTPS Outcalls](https://internetcomputer.org/https-outcalls)
@@ -163,6 +163,10 @@ Compare the generated SHA-256 hash with the hash provided in the repository to v
 ## Contributing
 
 Contributions are welcome! Please check out the [contributor guidelines](https://github.com/mfactory-lab/ic-cosmos/blob/main/.github/CONTRIBUTING.md) for more information.
+
+## Acknowledgments
+
+This project is forked from the [ic-solana](https://github.com/mfactory-lab/ic-solana) project.
 
 ## License
 
