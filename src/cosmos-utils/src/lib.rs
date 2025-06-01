@@ -1018,20 +1018,6 @@ pub fn build_transaction() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn send_signed_transaction(signature_blob: &str) -> Result<(), Box<dyn Error>> {
-    let public_key = get_public_key_from_canister()?;
-    let cosmos_address = public_key_to_cosmos_address(&public_key)?;
-    let signature = signature_blob
-        .trim_matches(|c| c == '"' || c == '\\')
-        .split("\\")
-        .filter(|s| !s.is_empty())
-        .map(|s| u8::from_str_radix(s, 16).unwrap_or(0))
-        .collect::<Vec<u8>>();
-    let (final_tx, _) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, Some(signature))?;
-    println!("{}", STANDARD.encode(&final_tx));
-    Ok(())
-}
-
 pub fn broadcast_transaction(tx_base64: &str) -> Result<(), Box<dyn Error>> {
     let client = Client::new();
     let request = json!({
