@@ -269,6 +269,30 @@ pub fn get_public_key_from_canister() -> Result<String, Box<dyn Error>> {
     Ok(public_key.to_string())
 }
 
+pub fn get_cosmos_address_from_canister() -> Result<String, Box<dyn Error>> {
+    let output = Command::new("dfx")
+        .args(["canister", "call", "cosmos_wallet", "cosmosAddress"])
+        .output()?;
+
+    let stdout = String::from_utf8(output.stdout)?;
+
+    // Parse the result from (variant { Ok = "cosmos1..." })
+    if let Some(start) = stdout.find("Ok = \"") {
+        let address_start = start + 6; // Skip 'Ok = "'
+        if let Some(end) = stdout[address_start..].find('"') {
+            let cosmos_address = &stdout[address_start..address_start + end];
+            return Ok(cosmos_address.to_string());
+        }
+    }
+
+    // If we can't parse the success format, check for error
+    if stdout.contains("Err") {
+        return Err("Failed to get cosmos address from canister".into());
+    }
+
+    Err("Unexpected response format from cosmosAddress canister call".into())
+}
+
 pub fn get_signature_from_canister(sign_bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let output = Command::new("dfx")
         .args([
@@ -345,6 +369,24 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Res
                                 })
                             }
                         },
+                        "/cosmos.staking.v1beta1.MsgDelegate" => {
+                            if let Ok(msg_delegate) = MsgDelegate::decode(msg.value.as_slice()) {
+                                json!({
+                                    "@type": msg.type_url,
+                                    "delegator_address": msg_delegate.delegator_address,
+                                    "validator_address": msg_delegate.validator_address,
+                                    "amount": msg_delegate.amount.map(|coin| json!({
+                                        "denom": coin.denom,
+                                        "amount": coin.amount
+                                    })).unwrap_or(json!({}))
+                                })
+                            } else {
+                                json!({
+                                    "@type": msg.type_url,
+                                    "value": STANDARD.encode(&msg.value)
+                                })
+                            }
+                        },
                         _ => {
                             // For unknown message types, fall back to base64 encoding
                             json!({
@@ -360,15 +402,28 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Res
                 "non_critical_extension_options": []
             },
             "auth_info": {
-                "signer_infos": [], // Empty for unsigned transactions
+                "signer_infos": tx.auth_info.as_ref().map(|a| &a.signer_infos).unwrap_or(&vec![]).iter().map(|signer| {
+                    json!({
+                        "public_key": signer.public_key.as_ref().map(|pk| json!({
+                            "@type": pk.type_url,
+                            "key": STANDARD.encode(&pk.value)
+                        })).unwrap_or(json!(null)),
+                        "mode_info": {
+                            "single": {
+                                "mode": "SIGN_MODE_DIRECT"
+                            }
+                        },
+                        "sequence": signer.sequence.to_string()
+                    })
+                }).collect::<Vec<_>>(),
                 "fee": tx.auth_info.as_ref().and_then(|a| a.fee.as_ref()).map(|f| json!({
                     "amount": f.amount.iter().map(|coin| json!({
                         "denom": coin.denom,
                         "amount": coin.amount
                     })).collect::<Vec<_>>(),
                     "gas_limit": f.gas_limit.to_string(),
-                    "payer": "",
-                    "granter": ""
+                    "payer": f.payer,
+                    "granter": f.granter
                 })).unwrap_or_else(|| json!({
                     "amount": [],
                     "gas_limit": "200000",
@@ -377,7 +432,7 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Res
                 })),
                 "tip": null
             },
-            "signatures": [] // Empty for unsigned transactions
+            "signatures": tx.signatures.iter().map(|sig| STANDARD.encode(sig)).collect::<Vec<_>>()
         });
 
         let json_output = if pretty {
@@ -388,8 +443,8 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Res
 
         if !title.is_empty() {
             println!("{}:", title);
-            println!("{}", json_output);
         }
+        println!("{}", json_output);
         Ok(json_output)
     } else {
         Err("Failed to decode transaction".into())
@@ -413,18 +468,6 @@ fn encode_length_delimited(tag: u8, data: &[u8]) -> Vec<u8> {
     let mut result = vec![tag];
     result.extend(encode_varint(data.len() as u64));
     result.extend(data);
-    result
-}
-
-/// Helper function to encode string field
-fn encode_string(tag: u8, value: &str) -> Vec<u8> {
-    encode_length_delimited(tag, value.as_bytes())
-}
-
-/// Helper function to encode uint64 field
-fn encode_uint64(tag: u8, value: u64) -> Vec<u8> {
-    let mut result = vec![tag];
-    result.extend(encode_varint(value));
     result
 }
 
@@ -707,8 +750,7 @@ pub fn calculate_fee_for_gas(gas_limit: u64, gas_price: f64) -> u64 {
 }
 
 pub fn generate_raw_transaction(message_type: MessageType) -> Result<(), Box<dyn Error>> {
-    let public_key = get_public_key_from_canister()?;
-    let cosmos_address = public_key_to_cosmos_address(&public_key)?;
+    let cosmos_address = get_cosmos_address_from_canister()?;
     println!("Cosmos address: {}", cosmos_address);
 
     // First, create a base transaction to estimate gas
@@ -857,32 +899,121 @@ pub fn generate_raw_transaction(message_type: MessageType) -> Result<(), Box<dyn
 }
 
 pub fn build_transaction() -> Result<(), Box<dyn Error>> {
+    // Show address generation
+    println!("=== Address Generation ===");
+
+    println!("Generated with: dfx canister call cosmos_wallet address");
     let public_key = get_public_key_from_canister()?;
-    let cosmos_address = public_key_to_cosmos_address(&public_key)?;
+    println!("Secp256k1 public key: {}", public_key);
+    println!("Generated with: dfx canister call cosmos_wallet cosmosAddress");
+    let cosmos_address = get_cosmos_address_from_canister()?;
     println!("Cosmos address: {}", cosmos_address);
+
+    // Show the transaction structure in JSON format
+    println!("\n=== Raw Transaction ===");
     let (tx_bytes, sign_bytes) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, None)?;
-    println!("Raw transaction (base64): {}", STANDARD.encode(&tx_bytes));
-    println!("Raw transaction (hex): 0x{}", hex::encode(&tx_bytes));
+    print_transaction_json(&tx_bytes, "", true)?;
 
-    // Use the new function to print transaction JSON
-    print_transaction_json(&tx_bytes, "Raw transaction (JSON)", true)?;
+    // Decode and display the SignDoc structure in human-readable format
+    println!("\n=== What's Being Signed (Canonical Sign Document) ===");
+    if let Ok(sign_doc) = SignDoc::decode(&sign_bytes[..]) {
+        println!("Chain ID: {}", sign_doc.chain_id);
+        println!("Account Number: {}", sign_doc.account_number);
 
-    println!("\nCanonical sign bytes (base64): {}", STANDARD.encode(&sign_bytes));
-    println!("Canonical sign bytes (hex): 0x{}", hex::encode(&sign_bytes));
+        // Decode and display the body
+        if let Ok(tx_body) = TxBody::decode(sign_doc.body_bytes.as_slice()) {
+            println!("Transaction Body:");
+            if !tx_body.memo.is_empty() {
+                println!("  Memo: \"{}\"", tx_body.memo);
+            }
+            println!("  Messages: {} message(s)", tx_body.messages.len());
+
+            for (i, msg) in tx_body.messages.iter().enumerate() {
+                println!("    Message {}: {}", i + 1, msg.type_url);
+
+                // Decode specific message types for better readability
+                match msg.type_url.as_str() {
+                    "/cosmos.bank.v1beta1.MsgSend" => {
+                        if let Ok(msg_send) = MsgSend::decode(msg.value.as_slice()) {
+                            println!("      From: {}", msg_send.from_address);
+                            println!("      To: {}", msg_send.to_address);
+                            for coin in &msg_send.amount {
+                                println!("      Amount: {} {}", coin.amount, coin.denom);
+                            }
+                        }
+                    }
+                    "/cosmos.staking.v1beta1.MsgDelegate" => {
+                        if let Ok(msg_delegate) = MsgDelegate::decode(msg.value.as_slice()) {
+                            println!("      Delegator: {}", msg_delegate.delegator_address);
+                            println!("      Validator: {}", msg_delegate.validator_address);
+                            if let Some(amount) = &msg_delegate.amount {
+                                println!("      Amount: {} {}", amount.amount, amount.denom);
+                            }
+                        }
+                    }
+                    _ => {
+                        println!("      Value: {} bytes (binary data)", msg.value.len());
+                    }
+                }
+            }
+        }
+
+        // Decode and display the auth info
+        if let Ok(auth_info) = AuthInfo::decode(sign_doc.auth_info_bytes.as_slice()) {
+            if let Some(fee) = &auth_info.fee {
+                println!("Fee & Gas:");
+                for coin in &fee.amount {
+                    println!("  Fee: {} {}", coin.amount, coin.denom);
+                }
+                println!("  Gas Limit: {}", fee.gas_limit);
+            }
+
+            for (i, signer) in auth_info.signer_infos.iter().enumerate() {
+                println!("Signer {}: sequence {}", i + 1, signer.sequence);
+            }
+        }
+    } else {
+        println!("Failed to decode SignDoc structure");
+    }
+
+    // Show the canonical sign document encodings
+    println!("\nCanonical sign document encodings:");
+    println!("Base64: {}", STANDARD.encode(&sign_bytes));
+    println!("Hex: {}", hex::encode(&sign_bytes));
+
+    // Show the canister call command
+    println!("\nTo sign this document with the canister:");
+    println!("dfx canister call --update cosmos_wallet signMessage \\");
+    println!(
+        "  '(blob \"{}\")'",
+        sign_bytes.iter().map(|b| format!("\\{:02X}", b)).collect::<String>()
+    );
 
     println!("\nGetting signature from canister...");
     let signature = get_signature_from_canister(&sign_bytes)?;
 
+    // Show signature encoding details
+    println!("\n=== Signature Details ===");
+    println!("Raw signature (hex): {}", hex::encode(&signature));
+    println!("Signature (base64): {}", STANDARD.encode(&signature));
+
     println!("\nCreating signed transaction...");
     let (final_tx, _) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, Some(signature))?;
-    println!("\nSigned transaction (base64): {}", STANDARD.encode(&final_tx));
-    println!("Signed transaction (hex): 0x{}", hex::encode(&final_tx));
 
-    // Use the new function to print signed transaction JSON
-    print_transaction_json(&final_tx, "Signed transaction (JSON)", true)?;
+    // Show the final signed transaction in JSON format only
+    print_transaction_json(&final_tx, "Final Signed Transaction", true)?;
 
-    println!("\nTo broadcast this transaction, run:");
+    println!("\n=== Broadcasting Options ===");
+    println!("Option 1 - Using cosmos-utils:");
     println!("cargo run -- broadcast \"{}\"", STANDARD.encode(&final_tx));
+
+    println!("\nOption 2 - Direct HTTP broadcast:");
+    println!("curl -X POST https://rpc.testcosmos.directory/cosmosicsprovidertestnet \\");
+    println!("  -H \"Content-Type: application/json\" \\");
+    println!(
+        "  -d '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_tx_sync\",\"params\":{{\"tx\":\"{}\"}}}}'",
+        STANDARD.encode(&final_tx)
+    );
 
     Ok(())
 }
@@ -946,9 +1077,6 @@ pub fn get_account_info(address: &str) -> Result<(u64, u64), Box<dyn Error>> {
     // The address should be encoded as a string, not as raw bytes
     let query_data = format!("0a{:02x}{}", address.len(), hex::encode(address.as_bytes()));
 
-    println!("Address: {}", address);
-    println!("Query data: {}", query_data);
-
     let request = json!({
         "jsonrpc": "2.0",
         "id": 1,
@@ -961,15 +1089,12 @@ pub fn get_account_info(address: &str) -> Result<(u64, u64), Box<dyn Error>> {
         }
     });
 
-    println!("Sending request: {}", serde_json::to_string_pretty(&request)?);
-
     let response = client
         .post("https://rpc.testcosmos.directory/cosmosicsprovidertestnet")
         .json(&request)
         .send()?;
 
     let response_json: serde_json::Value = response.json()?;
-    println!("Response: {}", serde_json::to_string_pretty(&response_json)?);
 
     // Check for error in response
     if let Some(error) = response_json.get("error") {
@@ -991,22 +1116,15 @@ pub fn get_account_info(address: &str) -> Result<(u64, u64), Box<dyn Error>> {
         .ok_or_else(|| "Failed to get account info")?;
 
     let decoded = STANDARD.decode(result)?;
-    println!("Decoded value (hex): {}", hex::encode(&decoded));
 
     // First parse the QueryAccountResponse
     let query_response = QueryAccountResponse::decode(&decoded[..])?;
 
     // Get the account Any message
     let account_any = query_response.account.ok_or_else(|| "No account found")?;
-    println!("Account type URL: {}", account_any.type_url);
-    println!("Account value (hex): {}", hex::encode(&account_any.value));
 
     // Parse the BaseAccount from the account field
     let account = BaseAccount::decode(account_any.value.as_slice())?;
-    println!(
-        "Parsed account: address={}, account_number={}, sequence={}",
-        account.address, account.account_number, account.sequence
-    );
 
     // If account number is 0, it means the account doesn't exist yet
     if account.account_number == 0 {
