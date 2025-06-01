@@ -7,6 +7,7 @@ use cosmos_sdk_proto::cosmos::{
     bank::v1beta1::MsgSend,
     base::v1beta1::Coin,
     crypto::secp256k1::PubKey,
+    staking::v1beta1::MsgDelegate,
     tx::signing::v1beta1::SignMode,
     tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignerInfo, Tx, TxBody},
 };
@@ -19,6 +20,13 @@ use serde_json::json;
 use sha2::{Digest as Sha256Digest, Sha256};
 use std::error::Error;
 use std::process::Command;
+
+/// Supported message types for transaction generation
+#[derive(Debug, Clone)]
+pub enum MessageType {
+    Send,
+    Delegate,
+}
 
 #[derive(Message)]
 pub struct SignDoc {
@@ -108,6 +116,100 @@ pub fn create_send_transaction(
 
     // Get account info
     let (account_number, sequence) = get_account_info(from_address)?;
+
+    let auth_info = AuthInfo {
+        signer_infos: vec![SignerInfo {
+            public_key: Some(pub_key_any),
+            mode_info: Some(ModeInfo {
+                sum: Some(cosmos_sdk_proto::cosmos::tx::v1beta1::mode_info::Sum::Single(
+                    cosmos_sdk_proto::cosmos::tx::v1beta1::mode_info::Single {
+                        mode: SignMode::Direct as i32,
+                    },
+                )),
+            }),
+            sequence,
+        }],
+        fee: Some(fee),
+        tip: None,
+    };
+
+    // Create sign doc with account number
+    let sign_doc = SignDoc {
+        body_bytes: tx_body.encode_to_vec(),
+        auth_info_bytes: auth_info.encode_to_vec(),
+        chain_id: "provider".to_string(),
+        account_number,
+    };
+
+    let sign_bytes = sign_doc.encode_to_vec();
+    let mut tx = Tx {
+        body: Some(tx_body),
+        auth_info: Some(auth_info),
+        signatures: vec![],
+    };
+    if let Some(sig) = signature {
+        if sig.len() < 64 {
+            eprintln!(
+                "Error: signature length is {} bytes, expected at least 64. Signature (hex): {}",
+                sig.len(),
+                hex::encode(&sig)
+            );
+            return Err(format!("Signature too short: got {} bytes, expected at least 64", sig.len()).into());
+        }
+        // Use the raw 64-byte signature as Cosmos expects
+        tx.signatures = vec![sig[..64].to_vec()];
+    }
+    Ok((tx.encode_to_vec(), sign_bytes))
+}
+
+pub fn create_delegate_transaction(
+    delegator_address: &str,
+    validator_address: &str,
+    amount: u64,
+    signature: Option<Vec<u8>>,
+) -> Result<(Vec<u8>, Vec<u8>), Box<dyn Error>> {
+    let msg_delegate = MsgDelegate {
+        delegator_address: delegator_address.to_string(),
+        validator_address: validator_address.to_string(),
+        amount: Some(Coin {
+            denom: "uatom".to_string(),
+            amount: amount.to_string(),
+        }),
+    };
+
+    let msg_any = Any {
+        type_url: "/cosmos.staking.v1beta1.MsgDelegate".to_string(),
+        value: msg_delegate.encode_to_vec(),
+    };
+
+    let tx_body = TxBody {
+        messages: vec![msg_any],
+        memo: "Delegate to validator".to_string(),
+        timeout_height: 0,
+        extension_options: vec![],
+        non_critical_extension_options: vec![],
+    };
+
+    let public_key = get_public_key_from_canister()?;
+    let pub_key = PubKey {
+        key: bs58::decode(&public_key).into_vec()?,
+    };
+    let pub_key_any = Any {
+        type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+        value: pub_key.encode_to_vec(),
+    };
+    let fee = Fee {
+        amount: vec![Coin {
+            denom: "uatom".to_string(),
+            amount: "5000".to_string(),
+        }],
+        gas_limit: 324000,
+        payer: "".to_string(),
+        granter: "".to_string(),
+    };
+
+    // Get account info
+    let (account_number, sequence) = get_account_info(delegator_address)?;
 
     let auth_info = AuthInfo {
         signer_infos: vec![SignerInfo {
@@ -294,24 +396,462 @@ pub fn print_transaction_json(tx_bytes: &[u8], title: &str, pretty: bool) -> Res
     }
 }
 
-pub fn generate_raw_transaction() -> Result<(), Box<dyn Error>> {
+/// Helper function to encode varint
+fn encode_varint(value: u64) -> Vec<u8> {
+    let mut result = Vec::new();
+    let mut val = value;
+    while val >= 0x80 {
+        result.push(((val & 0x7F) | 0x80) as u8);
+        val >>= 7;
+    }
+    result.push(val as u8);
+    result
+}
+
+/// Helper function to encode length-delimited field
+fn encode_length_delimited(tag: u8, data: &[u8]) -> Vec<u8> {
+    let mut result = vec![tag];
+    result.extend(encode_varint(data.len() as u64));
+    result.extend(data);
+    result
+}
+
+/// Helper function to encode string field
+fn encode_string(tag: u8, value: &str) -> Vec<u8> {
+    encode_length_delimited(tag, value.as_bytes())
+}
+
+/// Helper function to encode uint64 field
+fn encode_uint64(tag: u8, value: u64) -> Vec<u8> {
+    let mut result = vec![tag];
+    result.extend(encode_varint(value));
+    result
+}
+
+/// Estimate gas for a transaction by simulating it
+pub fn estimate_gas_for_transaction(transaction_json: &serde_json::Value) -> Result<u64, Box<dyn Error>> {
+    // Get public key and cosmos address for simulation
+    let public_key = get_public_key_from_canister()?;
+    let cosmos_address = public_key_to_cosmos_address(&public_key)?;
+    let pk_bytes = bs58::decode(&public_key).into_vec()?;
+
+    // Get account info for simulation
+    let (account_number, sequence) = get_account_info(&cosmos_address)?;
+
+    // Build a complete transaction for simulation
+    let messages_array = transaction_json["body"]["messages"]
+        .as_array()
+        .ok_or("Missing messages array")?;
+
+    if messages_array.is_empty() {
+        return Err("No messages to simulate".into());
+    }
+
+    // Create messages for the transaction body
+    let mut tx_messages = Vec::new();
+
+    // Encode each message for the simulation
+    for msg_json in messages_array {
+        let type_url = msg_json["@type"].as_str().ok_or("Missing @type")?;
+
+        let msg_bytes = match type_url {
+            "/cosmos.bank.v1beta1.MsgSend" => {
+                let msg_send = MsgSend {
+                    from_address: msg_json["from_address"].as_str().unwrap_or("").to_string(),
+                    to_address: msg_json["to_address"].as_str().unwrap_or("").to_string(),
+                    amount: msg_json["amount"]
+                        .as_array()
+                        .unwrap_or(&Vec::new())
+                        .iter()
+                        .map(|coin| Coin {
+                            denom: coin["denom"].as_str().unwrap_or("").to_string(),
+                            amount: coin["amount"].as_str().unwrap_or("0").to_string(),
+                        })
+                        .collect(),
+                };
+                msg_send.encode_to_vec()
+            }
+            "/cosmos.staking.v1beta1.MsgDelegate" => {
+                let msg_delegate = MsgDelegate {
+                    delegator_address: msg_json["delegator_address"].as_str().unwrap_or("").to_string(),
+                    validator_address: msg_json["validator_address"].as_str().unwrap_or("").to_string(),
+                    amount: Some(Coin {
+                        denom: msg_json["amount"]["denom"].as_str().unwrap_or("uatom").to_string(),
+                        amount: msg_json["amount"]["amount"].as_str().unwrap_or("0").to_string(),
+                    }),
+                };
+                msg_delegate.encode_to_vec()
+            }
+            _ => return Err(format!("Unsupported message type for simulation: {}", type_url).into()),
+        };
+
+        let msg_any = Any {
+            type_url: type_url.to_string(),
+            value: msg_bytes,
+        };
+        tx_messages.push(msg_any);
+    }
+
+    // Create transaction body with proper messages
+    let memo = transaction_json["body"]["memo"].as_str().unwrap_or("");
+    let tx_body = TxBody {
+        messages: tx_messages,
+        memo: memo.to_string(),
+        timeout_height: 0,
+        extension_options: vec![],
+        non_critical_extension_options: vec![],
+    };
+
+    // Create public key Any
+    let pub_key = PubKey { key: pk_bytes.clone() };
+    let pub_key_any = Any {
+        type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+        value: pub_key.encode_to_vec(),
+    };
+
+    // Create fee (start with minimal fee for simulation)
+    let fee = Fee {
+        amount: vec![Coin {
+            denom: "uatom".to_string(),
+            amount: "1000".to_string(),
+        }],
+        gas_limit: 1000000, // High limit for simulation
+        payer: "".to_string(),
+        granter: "".to_string(),
+    };
+
+    // Create auth info
+    let auth_info = AuthInfo {
+        signer_infos: vec![SignerInfo {
+            public_key: Some(pub_key_any),
+            mode_info: Some(ModeInfo {
+                sum: Some(cosmos_sdk_proto::cosmos::tx::v1beta1::mode_info::Sum::Single(
+                    cosmos_sdk_proto::cosmos::tx::v1beta1::mode_info::Single {
+                        mode: SignMode::Direct as i32,
+                    },
+                )),
+            }),
+            sequence,
+        }],
+        fee: Some(fee),
+        tip: None,
+    };
+
+    // Create sign doc for signing
+    let sign_doc = SignDoc {
+        body_bytes: tx_body.encode_to_vec(),
+        auth_info_bytes: auth_info.encode_to_vec(),
+        chain_id: "provider".to_string(),
+        account_number,
+    };
+
+    let sign_bytes = sign_doc.encode_to_vec();
+
+    // Get signature from canister for simulation
+    println!("Getting signature from canister for simulation...");
+    let signature = get_signature_from_canister(&sign_bytes)?;
+
+    // Ensure signature is 64 bytes (truncate if longer)
+    let signature = if signature.len() >= 64 {
+        signature[..64].to_vec()
+    } else {
+        return Err(format!(
+            "Signature too short: got {} bytes, expected at least 64",
+            signature.len()
+        )
+        .into());
+    };
+
+    // Build tx for simulation (with signatures)
+    let tx = Tx {
+        body: Some(tx_body),
+        auth_info: Some(auth_info),
+        signatures: vec![signature], // Include real signature for simulation
+    };
+
+    let tx_bytes = tx.encode_to_vec();
+
+    // Create SimulateRequest protobuf - just wrap the tx in a length-delimited field
+    let simulate_request_bytes = encode_length_delimited(0x0a, &tx_bytes);
+    let query_data = hex::encode(&simulate_request_bytes);
+
+    // Make the simulation RPC call
+    let client = Client::new();
+    let request = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "abci_query",
+        "params": {
+            "path": "/cosmos.tx.v1beta1.Service/Simulate",
+            "data": query_data,
+            "height": "0",
+            "prove": false
+        }
+    });
+
+    println!("Making simulation request with real signature...");
+    let response = client
+        .post("https://rpc.testcosmos.directory/cosmosicsprovidertestnet")
+        .json(&request)
+        .send()?;
+
+    let response_json: serde_json::Value = response.json()?;
+
+    // Check for error
+    if let Some(error) = response_json.get("error") {
+        return Err(format!("Simulation RPC error: {}", error).into());
+    }
+
+    let result_code = response_json["result"]["response"]["code"].as_i64().unwrap_or(-1);
+    if result_code != 0 {
+        let log = response_json["result"]["response"]["log"]
+            .as_str()
+            .unwrap_or("Unknown error");
+        println!("Simulation failed: {}", log);
+        // Fall back to conservative estimate
+        let message_type = messages_array[0]["@type"].as_str().unwrap_or("");
+        let fallback_gas = match message_type {
+            "/cosmos.bank.v1beta1.MsgSend" => 125_000u64, // Updated based on actual usage: ~97k-104k
+            "/cosmos.staking.v1beta1.MsgDelegate" => 350_000u64, // Updated based on actual usage: ~324k-344k
+            _ => 250_000u64,
+        };
+        println!("Using fallback estimate: {}", fallback_gas);
+        return Ok(fallback_gas);
+    }
+
+    // Parse simulation response
+    let response_value = response_json["result"]["response"]["value"]
+        .as_str()
+        .ok_or("Missing simulation response value")?;
+
+    let decoded = STANDARD.decode(response_value)?;
+
+    // Parse SimulateResponse to extract gas_used
+    // The structure should be: SimulateResponse { gas_info: { gas_wanted, gas_used }, result }
+
+    println!("Simulation successful! Parsing gas usage...");
+    let decoded_hex = hex::encode(&decoded);
+    println!(
+        "Simulation response (hex): {}",
+        &decoded_hex[..std::cmp::min(200, decoded_hex.len())]
+    );
+
+    // Try to extract gas_used from the response
+    // Look for gas_used field (tag 0x10) in the response
+    if decoded.len() >= 16 {
+        // Look for gas_used pattern in the first part of the response
+        for i in 0..std::cmp::min(50, decoded.len() - 8) {
+            if decoded[i] == 0x10 {
+                // gas_used field tag
+                let mut pos = i + 1;
+                if let Ok(gas_used) = read_varint_at(&decoded, &mut pos) {
+                    if gas_used > 50_000 && gas_used < 2_000_000 {
+                        // Reasonable range
+                        // Use different buffer multipliers based on message type
+                        let message_type = messages_array[0]["@type"].as_str().unwrap_or("");
+                        let buffer_multiplier = match message_type {
+                            "/cosmos.bank.v1beta1.MsgSend" => 1.25, // Send needs more buffer due to variability
+                            "/cosmos.staking.v1beta1.MsgDelegate" => 1.15, // Delegate is more predictable
+                            _ => 1.2,
+                        };
+                        let with_buffer = (gas_used as f64 * buffer_multiplier) as u64;
+                        println!(
+                            "✅ Simulated gas_used: {}, recommended: {} ({}x buffer)",
+                            gas_used, with_buffer, buffer_multiplier
+                        );
+                        return Ok(with_buffer);
+                    }
+                }
+            }
+        }
+    }
+
+    // If simulation parsing fails, fall back to conservative estimate
+    let message_type = messages_array[0]["@type"].as_str().unwrap_or("");
+    let fallback_gas = match message_type {
+        "/cosmos.bank.v1beta1.MsgSend" => 125_000u64, // Updated based on actual usage: ~97k-104k
+        "/cosmos.staking.v1beta1.MsgDelegate" => 350_000u64, // Updated based on actual usage: ~324k-344k
+        _ => 250_000u64,
+    };
+    println!("Simulation parsing failed, using fallback estimate: {}", fallback_gas);
+    Ok(fallback_gas)
+}
+
+/// Helper function to read varint at specific position
+fn read_varint_at(data: &[u8], pos: &mut usize) -> Result<u64, Box<dyn Error>> {
+    let mut value = 0u64;
+    let mut shift = 0;
+
+    while *pos < data.len() {
+        let byte = data[*pos];
+        *pos += 1;
+
+        value |= ((byte & 0x7F) as u64) << shift;
+
+        if byte & 0x80 == 0 {
+            return Ok(value);
+        }
+        shift += 7;
+
+        if shift >= 64 {
+            return Err("Varint too long".into());
+        }
+    }
+
+    Err("Unexpected end of data while reading varint".into())
+}
+
+/// Calculate appropriate fee based on gas limit
+pub fn calculate_fee_for_gas(gas_limit: u64, gas_price: f64) -> u64 {
+    (gas_limit as f64 * gas_price).ceil() as u64
+}
+
+pub fn generate_raw_transaction(message_type: MessageType) -> Result<(), Box<dyn Error>> {
     let public_key = get_public_key_from_canister()?;
     let cosmos_address = public_key_to_cosmos_address(&public_key)?;
     println!("Cosmos address: {}", cosmos_address);
 
-    let (tx_bytes, sign_bytes) = create_send_transaction(&cosmos_address, &cosmos_address, 1000, None)?;
-    println!("Raw transaction (base64): {}", STANDARD.encode(&tx_bytes));
-    println!("Raw transaction (hex): 0x{}", hex::encode(&tx_bytes));
+    // First, create a base transaction to estimate gas
+    let base_json = match message_type {
+        MessageType::Send => {
+            println!("Generating MsgSend transaction for IC Cosmos wallet...");
+            json!({
+                "body": {
+                    "messages": [
+                        {
+                            "@type": "/cosmos.bank.v1beta1.MsgSend",
+                            "from_address": cosmos_address,
+                            "to_address": cosmos_address,
+                            "amount": [
+                                {
+                                    "denom": "uatom",
+                                    "amount": "1000"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            })
+        }
+        MessageType::Delegate => {
+            println!("Generating MsgDelegate transaction for IC Cosmos wallet...");
+            let validator_address = "cosmosvaloper1e5yfpc8l6g4808fclmlyd38tjgxuwshnmjkrq6";
+            println!("Validator address: {}", validator_address);
+            json!({
+                "body": {
+                    "messages": [
+                        {
+                            "@type": "/cosmos.staking.v1beta1.MsgDelegate",
+                            "delegator_address": cosmos_address,
+                            "validator_address": validator_address,
+                            "amount": {
+                                "denom": "uatom",
+                                "amount": "1000"
+                            }
+                        }
+                    ]
+                }
+            })
+        }
+    };
 
-    // Print the transaction JSON and save to file
-    let json_output = print_transaction_json(&tx_bytes, "Raw transaction (JSON)", false)?;
+    // Estimate gas requirement
+    let estimated_gas = estimate_gas_for_transaction(&base_json)?;
+    let gas_limit = estimated_gas.to_string();
 
-    // Save to file
-    std::fs::write("rawtx.json", &json_output)?;
-    println!("\nRaw transaction JSON saved to rawtx.json");
+    // Calculate fee (using 0.01 uatom per gas unit, optimized for lower fees)
+    let gas_price = 0.01;
+    let fee_amount = calculate_fee_for_gas(estimated_gas, gas_price);
 
-    println!("\nCanonical sign bytes (base64): {}", STANDARD.encode(&sign_bytes));
-    println!("Canonical sign bytes (hex): 0x{}", hex::encode(&sign_bytes));
+    println!("Estimated gas needed: {}", estimated_gas);
+    println!("Calculated fee: {} uatom", fee_amount);
+
+    let json_obj = match message_type {
+        MessageType::Send => {
+            json!({
+                "body": {
+                    "messages": [
+                        {
+                            "@type": "/cosmos.bank.v1beta1.MsgSend",
+                            "from_address": cosmos_address,
+                            "to_address": cosmos_address,
+                            "amount": [
+                                {
+                                    "denom": "uatom",
+                                    "amount": "1000"
+                                }
+                            ]
+                        }
+                    ],
+                    "memo": "Send transaction",
+                    "timeout_height": "0",
+                    "extension_options": [],
+                    "non_critical_extension_options": []
+                },
+                "auth_info": {
+                    "signer_infos": [],
+                    "fee": {
+                        "amount": [
+                            {
+                                "denom": "uatom",
+                                "amount": fee_amount.to_string()
+                            }
+                        ],
+                        "gas_limit": gas_limit,
+                        "payer": "",
+                        "granter": ""
+                    }
+                },
+                "signatures": []
+            })
+        }
+        MessageType::Delegate => {
+            let validator_address = "cosmosvaloper1e5yfpc8l6g4808fclmlyd38tjgxuwshnmjkrq6";
+            json!({
+                "body": {
+                    "messages": [
+                        {
+                            "@type": "/cosmos.staking.v1beta1.MsgDelegate",
+                            "delegator_address": cosmos_address,
+                            "validator_address": validator_address,
+                            "amount": {
+                                "denom": "uatom",
+                                "amount": "1000"
+                            }
+                        }
+                    ],
+                    "memo": "Delegate to validator",
+                    "timeout_height": "0",
+                    "extension_options": [],
+                    "non_critical_extension_options": []
+                },
+                "auth_info": {
+                    "signer_infos": [],
+                    "fee": {
+                        "amount": [
+                            {
+                                "denom": "uatom",
+                                "amount": fee_amount.to_string()
+                            }
+                        ],
+                        "gas_limit": gas_limit,
+                        "payer": "",
+                        "granter": ""
+                    }
+                },
+                "signatures": []
+            })
+        }
+    };
+
+    let compact_json = serde_json::to_string(&json_obj)?;
+    let escaped_json = compact_json.replace("\"", "\\\"");
+
+    println!("\nTransaction JSON:");
+    println!("{}", serde_json::to_string_pretty(&json_obj)?);
+
+    println!("\nTo send this transaction with the IC Cosmos wallet, run:");
+    println!("dfx canister call cosmos_wallet sendCosmosTransaction '(variant {{ Testnet }}, null, \"provider\", \"{}\")' --update", escaped_json);
 
     Ok(())
 }
@@ -568,6 +1108,67 @@ pub fn analyze_account_response(address: &str) -> Result<String, Box<dyn Error>>
     }
 
     Ok(analysis)
+}
+
+/// Analyze gas usage from a transaction result to improve estimates
+pub fn analyze_gas_usage_from_result(tx_result_json: &str) -> Result<(), Box<dyn Error>> {
+    let result: serde_json::Value = serde_json::from_str(tx_result_json)?;
+
+    let gas_wanted = result["data"]["gas_wanted"].as_str().unwrap_or("0").parse::<u64>()?;
+    let gas_used = result["data"]["gas_used"].as_str().unwrap_or("0").parse::<u64>()?;
+    let code = result["data"]["code"].as_u64().unwrap_or(0);
+
+    // Extract message type from the transaction
+    let message_type = result["data"]["tx"]["body"]["messages"][0]["@type"]
+        .as_str()
+        .unwrap_or("unknown");
+
+    println!("=== Gas Usage Analysis ===");
+    println!("Message Type: {}", message_type);
+    println!("Gas Wanted: {}", gas_wanted);
+    println!("Gas Used: {}", gas_used);
+    println!("Result: {}", if code == 0 { "SUCCESS" } else { "FAILED" });
+
+    if gas_used > 0 {
+        let efficiency = (gas_used as f64 / gas_wanted as f64) * 100.0;
+        println!("Gas Efficiency: {:.1}% ({} / {})", efficiency, gas_used, gas_wanted);
+
+        if code != 0 && gas_used >= gas_wanted {
+            println!("⚠️  OUT OF GAS: Need at least {} gas", gas_used + 1);
+            println!("💡 Recommended gas limit: {}", ((gas_used as f64) * 1.2) as u64);
+        } else if efficiency < 70.0 {
+            println!(
+                "💰 OVER-PROVISIONED: Could reduce gas limit to {}",
+                ((gas_used as f64) * 1.15) as u64
+            );
+        } else if efficiency > 95.0 {
+            println!(
+                "⚠️  CLOSE CALL: Consider increasing buffer to {}",
+                ((gas_used as f64) * 1.2) as u64
+            );
+        } else {
+            println!("✅ OPTIMAL: Gas allocation is reasonable");
+        }
+
+        // Suggest improvements to our estimates
+        match message_type {
+            "/cosmos.staking.v1beta1.MsgDelegate" => {
+                let current_estimate = 324000; // Current estimate from our function
+                let recommended = ((gas_used as f64) * 1.2) as u64;
+                if recommended != current_estimate {
+                    println!("📊 Code Update Suggestion:");
+                    println!(
+                        "   Update MsgDelegate base gas from 270,000 to {}",
+                        ((gas_used as f64) * 1.0) as u64
+                    );
+                    println!("   This would give final estimate: {}", recommended);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

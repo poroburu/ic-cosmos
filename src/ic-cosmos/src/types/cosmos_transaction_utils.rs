@@ -1,5 +1,5 @@
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use bech32::{encode, Variant, ToBase32};
+use bech32::{encode, ToBase32, Variant};
 use ripemd::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -11,18 +11,23 @@ pub struct CosmosAccountInfo {
     pub sequence: u64,
 }
 
-/// Transaction structure for Cosmos transactions
+/// Generic transaction structure for any Cosmos transaction
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CosmosTransaction {
-    pub from_address: String,
-    pub to_address: String,
-    pub amount: Vec<CosmosCoin>,
+    pub messages: Vec<CosmosMessage>,
     pub fee: Vec<CosmosCoin>,
     pub gas_limit: u64,
     pub memo: String,
     pub chain_id: String,
     pub account_number: u64,
     pub sequence: u64,
+}
+
+/// Generic message structure for any Cosmos message type
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CosmosMessage {
+    pub type_url: String,
+    pub value: serde_json::Value,
 }
 
 /// Coin structure for Cosmos amounts
@@ -56,8 +61,8 @@ pub fn public_key_to_cosmos_address(public_key: &str) -> Result<String, String> 
     let ripemd160_hash = hasher.finalize();
 
     let data = ripemd160_hash.to_vec();
-    let encoded = encode("cosmos", data.to_base32(), Variant::Bech32)
-        .map_err(|e| format!("Failed to encode address: {}", e))?;
+    let encoded =
+        encode("cosmos", data.to_base32(), Variant::Bech32).map_err(|e| format!("Failed to encode address: {}", e))?;
 
     Ok(encoded)
 }
@@ -66,7 +71,8 @@ pub fn public_key_to_cosmos_address(public_key: &str) -> Result<String, String> 
 /// This is a simplified parser for the specific protobuf format we expect
 pub fn parse_account_info_from_abci(response_value: &str) -> Result<(u64, u64), String> {
     // Decode the base64 response
-    let decoded = STANDARD.decode(response_value)
+    let decoded = STANDARD
+        .decode(response_value)
         .map_err(|e| format!("Failed to decode base64 response: {}", e))?;
 
     // Parse the protobuf response manually
@@ -262,30 +268,167 @@ fn encode_uint64(tag: u8, value: u64) -> Vec<u8> {
     result
 }
 
-/// Create sign document bytes for Cosmos transaction signing using manual protobuf encoding
-pub fn create_sign_doc_bytes(transaction: &CosmosTransaction, public_key: &[u8]) -> Result<Vec<u8>, String> {
-    // Create MsgSend protobuf bytes
-    let mut msg_send_bytes = Vec::new();
-    msg_send_bytes.extend(encode_string(0x0a, &transaction.from_address)); // from_address = 1
-    msg_send_bytes.extend(encode_string(0x12, &transaction.to_address)); // to_address = 2
-    
+/// Helper function to encode a generic message to protobuf bytes
+fn encode_message_to_protobuf(message: &CosmosMessage) -> Result<Vec<u8>, String> {
+    match message.type_url.as_str() {
+        "/cosmos.bank.v1beta1.MsgSend" => encode_msg_send(&message.value),
+        "/cosmos.staking.v1beta1.MsgDelegate" => encode_msg_delegate(&message.value),
+        "/cosmos.staking.v1beta1.MsgUndelegate" => encode_msg_undelegate(&message.value),
+        "/cosmos.staking.v1beta1.MsgBeginRedelegate" => encode_msg_begin_redelegate(&message.value),
+        "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" => {
+            encode_msg_withdraw_delegator_reward(&message.value)
+        }
+        _ => Err(format!("Unsupported message type: {}", message.type_url)),
+    }
+}
+
+/// Encode MsgSend to protobuf bytes
+fn encode_msg_send(value: &serde_json::Value) -> Result<Vec<u8>, String> {
+    let from_address = value["from_address"]
+        .as_str()
+        .ok_or("Missing from_address in MsgSend")?;
+    let to_address = value["to_address"].as_str().ok_or("Missing to_address in MsgSend")?;
+    let amount_array = value["amount"].as_array().ok_or("Missing amount array in MsgSend")?;
+
+    let mut msg_bytes = Vec::new();
+    msg_bytes.extend(encode_string(0x0a, from_address)); // from_address = 1
+    msg_bytes.extend(encode_string(0x12, to_address)); // to_address = 2
+
     // Encode amount array (field 3)
-    for coin in &transaction.amount {
+    for coin_value in amount_array {
+        let denom = coin_value["denom"].as_str().ok_or("Missing denom in coin")?;
+        let amount = coin_value["amount"].as_str().ok_or("Missing amount in coin")?;
+
         let mut coin_bytes = Vec::new();
-        coin_bytes.extend(encode_string(0x0a, &coin.denom)); // denom = 1
-        coin_bytes.extend(encode_string(0x12, &coin.amount)); // amount = 2
-        msg_send_bytes.extend(encode_length_delimited(0x1a, &coin_bytes)); // amount = 3
+        coin_bytes.extend(encode_string(0x0a, denom)); // denom = 1
+        coin_bytes.extend(encode_string(0x12, amount)); // amount = 2
+        msg_bytes.extend(encode_length_delimited(0x1a, &coin_bytes)); // amount = 3
     }
 
-    // Create Any message for MsgSend
-    let type_url = "/cosmos.bank.v1beta1.MsgSend";
-    let mut msg_any_bytes = Vec::new();
-    msg_any_bytes.extend(encode_string(0x0a, type_url)); // type_url = 1
-    msg_any_bytes.extend(encode_length_delimited(0x12, &msg_send_bytes)); // value = 2
+    Ok(msg_bytes)
+}
 
-    // Create TxBody
+/// Encode MsgDelegate to protobuf bytes
+fn encode_msg_delegate(value: &serde_json::Value) -> Result<Vec<u8>, String> {
+    let delegator_address = value["delegator_address"]
+        .as_str()
+        .ok_or("Missing delegator_address in MsgDelegate")?;
+    let validator_address = value["validator_address"]
+        .as_str()
+        .ok_or("Missing validator_address in MsgDelegate")?;
+    let amount = value["amount"]
+        .as_object()
+        .ok_or("Missing amount object in MsgDelegate")?;
+
+    let denom = amount["denom"].as_str().ok_or("Missing denom in amount")?;
+    let amount_str = amount["amount"].as_str().ok_or("Missing amount value")?;
+
+    let mut msg_bytes = Vec::new();
+    msg_bytes.extend(encode_string(0x0a, delegator_address)); // delegator_address = 1
+    msg_bytes.extend(encode_string(0x12, validator_address)); // validator_address = 2
+
+    // Encode amount (field 3)
+    let mut coin_bytes = Vec::new();
+    coin_bytes.extend(encode_string(0x0a, denom)); // denom = 1
+    coin_bytes.extend(encode_string(0x12, amount_str)); // amount = 2
+    msg_bytes.extend(encode_length_delimited(0x1a, &coin_bytes)); // amount = 3
+
+    Ok(msg_bytes)
+}
+
+/// Encode MsgUndelegate to protobuf bytes
+fn encode_msg_undelegate(value: &serde_json::Value) -> Result<Vec<u8>, String> {
+    let delegator_address = value["delegator_address"]
+        .as_str()
+        .ok_or("Missing delegator_address in MsgUndelegate")?;
+    let validator_address = value["validator_address"]
+        .as_str()
+        .ok_or("Missing validator_address in MsgUndelegate")?;
+    let amount = value["amount"]
+        .as_object()
+        .ok_or("Missing amount object in MsgUndelegate")?;
+
+    let denom = amount["denom"].as_str().ok_or("Missing denom in amount")?;
+    let amount_str = amount["amount"].as_str().ok_or("Missing amount value")?;
+
+    let mut msg_bytes = Vec::new();
+    msg_bytes.extend(encode_string(0x0a, delegator_address)); // delegator_address = 1
+    msg_bytes.extend(encode_string(0x12, validator_address)); // validator_address = 2
+
+    // Encode amount (field 3)
+    let mut coin_bytes = Vec::new();
+    coin_bytes.extend(encode_string(0x0a, denom)); // denom = 1
+    coin_bytes.extend(encode_string(0x12, amount_str)); // amount = 2
+    msg_bytes.extend(encode_length_delimited(0x1a, &coin_bytes)); // amount = 3
+
+    Ok(msg_bytes)
+}
+
+/// Encode MsgBeginRedelegate to protobuf bytes
+fn encode_msg_begin_redelegate(value: &serde_json::Value) -> Result<Vec<u8>, String> {
+    let delegator_address = value["delegator_address"]
+        .as_str()
+        .ok_or("Missing delegator_address in MsgBeginRedelegate")?;
+    let validator_src_address = value["validator_src_address"]
+        .as_str()
+        .ok_or("Missing validator_src_address in MsgBeginRedelegate")?;
+    let validator_dst_address = value["validator_dst_address"]
+        .as_str()
+        .ok_or("Missing validator_dst_address in MsgBeginRedelegate")?;
+    let amount = value["amount"]
+        .as_object()
+        .ok_or("Missing amount object in MsgBeginRedelegate")?;
+
+    let denom = amount["denom"].as_str().ok_or("Missing denom in amount")?;
+    let amount_str = amount["amount"].as_str().ok_or("Missing amount value")?;
+
+    let mut msg_bytes = Vec::new();
+    msg_bytes.extend(encode_string(0x0a, delegator_address)); // delegator_address = 1
+    msg_bytes.extend(encode_string(0x12, validator_src_address)); // validator_src_address = 2
+    msg_bytes.extend(encode_string(0x1a, validator_dst_address)); // validator_dst_address = 3
+
+    // Encode amount (field 4)
+    let mut coin_bytes = Vec::new();
+    coin_bytes.extend(encode_string(0x0a, denom)); // denom = 1
+    coin_bytes.extend(encode_string(0x12, amount_str)); // amount = 2
+    msg_bytes.extend(encode_length_delimited(0x22, &coin_bytes)); // amount = 4
+
+    Ok(msg_bytes)
+}
+
+/// Encode MsgWithdrawDelegatorReward to protobuf bytes
+fn encode_msg_withdraw_delegator_reward(value: &serde_json::Value) -> Result<Vec<u8>, String> {
+    let delegator_address = value["delegator_address"]
+        .as_str()
+        .ok_or("Missing delegator_address in MsgWithdrawDelegatorReward")?;
+    let validator_address = value["validator_address"]
+        .as_str()
+        .ok_or("Missing validator_address in MsgWithdrawDelegatorReward")?;
+
+    let mut msg_bytes = Vec::new();
+    msg_bytes.extend(encode_string(0x0a, delegator_address)); // delegator_address = 1
+    msg_bytes.extend(encode_string(0x12, validator_address)); // validator_address = 2
+
+    Ok(msg_bytes)
+}
+
+/// Create sign document bytes for Cosmos transaction signing using manual protobuf encoding
+pub fn create_sign_doc_bytes(transaction: &CosmosTransaction, public_key: &[u8]) -> Result<Vec<u8>, String> {
+    // Create TxBody with multiple messages
     let mut tx_body_bytes = Vec::new();
-    tx_body_bytes.extend(encode_length_delimited(0x0a, &msg_any_bytes)); // messages = 1
+
+    // Encode each message
+    for message in &transaction.messages {
+        let msg_bytes = encode_message_to_protobuf(message)?;
+
+        // Create Any message
+        let mut msg_any_bytes = Vec::new();
+        msg_any_bytes.extend(encode_string(0x0a, &message.type_url)); // type_url = 1
+        msg_any_bytes.extend(encode_length_delimited(0x12, &msg_bytes)); // value = 2
+
+        tx_body_bytes.extend(encode_length_delimited(0x0a, &msg_any_bytes)); // messages = 1
+    }
+
     tx_body_bytes.extend(encode_string(0x12, &transaction.memo)); // memo = 2
     tx_body_bytes.extend(encode_uint64(0x18, 0)); // timeout_height = 3
 
@@ -347,28 +490,21 @@ pub fn build_transaction_for_broadcast(
     public_key: &[u8],
     signature: &[u8],
 ) -> Result<String, String> {
-    // Create MsgSend protobuf bytes
-    let mut msg_send_bytes = Vec::new();
-    msg_send_bytes.extend(encode_string(0x0a, &transaction.from_address)); // from_address = 1
-    msg_send_bytes.extend(encode_string(0x12, &transaction.to_address)); // to_address = 2
-    
-    // Encode amount array (field 3)
-    for coin in &transaction.amount {
-        let mut coin_bytes = Vec::new();
-        coin_bytes.extend(encode_string(0x0a, &coin.denom)); // denom = 1
-        coin_bytes.extend(encode_string(0x12, &coin.amount)); // amount = 2
-        msg_send_bytes.extend(encode_length_delimited(0x1a, &coin_bytes)); // amount = 3
+    // Create TxBody with multiple messages
+    let mut tx_body_bytes = Vec::new();
+
+    // Encode each message
+    for message in &transaction.messages {
+        let msg_bytes = encode_message_to_protobuf(message)?;
+
+        // Create Any message
+        let mut msg_any_bytes = Vec::new();
+        msg_any_bytes.extend(encode_string(0x0a, &message.type_url)); // type_url = 1
+        msg_any_bytes.extend(encode_length_delimited(0x12, &msg_bytes)); // value = 2
+
+        tx_body_bytes.extend(encode_length_delimited(0x0a, &msg_any_bytes)); // messages = 1
     }
 
-    // Create Any message for MsgSend
-    let type_url = "/cosmos.bank.v1beta1.MsgSend";
-    let mut msg_any_bytes = Vec::new();
-    msg_any_bytes.extend(encode_string(0x0a, type_url)); // type_url = 1
-    msg_any_bytes.extend(encode_length_delimited(0x12, &msg_send_bytes)); // value = 2
-
-    // Create TxBody
-    let mut tx_body_bytes = Vec::new();
-    tx_body_bytes.extend(encode_length_delimited(0x0a, &msg_any_bytes)); // messages = 1
     tx_body_bytes.extend(encode_string(0x12, &transaction.memo)); // memo = 2
     tx_body_bytes.extend(encode_uint64(0x18, 0)); // timeout_height = 3
 
@@ -422,4 +558,25 @@ pub fn build_transaction_for_broadcast(
 
     // Encode as base64
     Ok(STANDARD.encode(&tx_bytes))
-} 
+}
+
+/// Helper function to extract signer address from a message
+pub fn extract_signer_address_from_message(message: &CosmosMessage) -> Result<String, String> {
+    match message.type_url.as_str() {
+        "/cosmos.bank.v1beta1.MsgSend" => message.value["from_address"]
+            .as_str()
+            .ok_or("Missing from_address in MsgSend".to_string())
+            .map(|s| s.to_string()),
+        "/cosmos.staking.v1beta1.MsgDelegate"
+        | "/cosmos.staking.v1beta1.MsgUndelegate"
+        | "/cosmos.staking.v1beta1.MsgBeginRedelegate"
+        | "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" => message.value["delegator_address"]
+            .as_str()
+            .ok_or("Missing delegator_address in staking/distribution message".to_string())
+            .map(|s| s.to_string()),
+        _ => Err(format!(
+            "Unsupported message type for signer extraction: {}",
+            message.type_url
+        )),
+    }
+}

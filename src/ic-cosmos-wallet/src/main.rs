@@ -4,10 +4,11 @@ use candid::candid_method;
 use ic_cdk::update;
 use ic_cosmos::{
     rpc_client::{RpcConfig, RpcResult, RpcServices},
-    types::{BlockHash, Pubkey, RpcSendTransactionConfig, Transaction, 
-           CosmosTransaction, CosmosCoin, public_key_to_cosmos_address, 
-           parse_account_info_from_abci, create_sign_doc_bytes, 
-           build_transaction_for_broadcast},
+    types::{
+        build_transaction_for_broadcast, create_sign_doc_bytes, extract_signer_address_from_message,
+        parse_account_info_from_abci, public_key_to_cosmos_address, BlockHash, CosmosCoin, CosmosMessage,
+        CosmosTransaction, Pubkey, RpcSendTransactionConfig, Transaction,
+    },
 };
 use ic_cosmos_wallet::{
     eddsa::{ecdsa_public_key, sign_with_ecdsa},
@@ -155,10 +156,35 @@ pub async fn send_cosmos_transaction(
     let tx_json: serde_json::Value = serde_json::from_str(&raw_transaction)
         .map_err(|e| ic_cosmos::rpc_client::RpcError::ParseError(format!("Failed to parse transaction: {}", e)))?;
 
-    // Extract the from_address from the first message
-    let from_address = tx_json["body"]["messages"][0]["from_address"].as_str().ok_or_else(|| {
-        ic_cosmos::rpc_client::RpcError::ParseError("Missing from_address in transaction".to_string())
+    // Parse messages from the transaction
+    let messages_array = tx_json["body"]["messages"].as_array().ok_or_else(|| {
+        ic_cosmos::rpc_client::RpcError::ParseError("Missing messages array in transaction body".to_string())
     })?;
+
+    if messages_array.is_empty() {
+        return Err(ic_cosmos::rpc_client::RpcError::ParseError(
+            "Transaction must contain at least one message".to_string(),
+        ));
+    }
+
+    // Convert JSON messages to CosmosMessage structs
+    let mut cosmos_messages = Vec::new();
+    for msg_json in messages_array {
+        let type_url = msg_json["@type"]
+            .as_str()
+            .ok_or_else(|| ic_cosmos::rpc_client::RpcError::ParseError("Missing @type field in message".to_string()))?;
+
+        // Clone the message value without the @type field
+        let mut msg_value = msg_json.clone();
+        if let Some(obj) = msg_value.as_object_mut() {
+            obj.remove("@type");
+        }
+
+        cosmos_messages.push(CosmosMessage {
+            type_url: type_url.to_string(),
+            value: msg_value,
+        });
+    }
 
     // Get our public key and derive the Cosmos address
     let key_name = read_state(|s| s.ecdsa_key.to_owned());
@@ -168,15 +194,25 @@ pub async fn send_cosmos_transaction(
     let our_cosmos_address = public_key_to_cosmos_address(&bs58::encode(&pk).into_string())
         .map_err(|e| ic_cosmos::rpc_client::RpcError::ParseError(e))?;
 
-    // Verify that we own the from_address
-    if from_address != our_cosmos_address {
-        return Err(ic_cosmos::rpc_client::RpcError::ParseError(
-            "Transaction from_address does not match our wallet address".to_string(),
-        ));
+    // Verify that we own all the signer addresses in the messages
+    for message in &cosmos_messages {
+        let signer_address =
+            extract_signer_address_from_message(message).map_err(|e| ic_cosmos::rpc_client::RpcError::ParseError(e))?;
+
+        if signer_address != our_cosmos_address {
+            return Err(ic_cosmos::rpc_client::RpcError::ParseError(format!(
+                "Message signer address '{}' does not match our wallet address '{}'",
+                signer_address, our_cosmos_address
+            )));
+        }
     }
 
     // Get account info (account_number and sequence) via abci_query
-    let query_data = format!("0a{:02x}{}", from_address.len(), hex::encode(from_address.as_bytes()));
+    let query_data = format!(
+        "0a{:02x}{}",
+        our_cosmos_address.len(),
+        hex::encode(our_cosmos_address.as_bytes())
+    );
     let account_info_result = ic_cdk::call::<_, (RpcResult<ic_cosmos::types::ABCIQueryResult>,)>(
         cos_canister,
         "cos_getAbciQuery",
@@ -220,28 +256,6 @@ pub async fn send_cosmos_transaction(
         )));
     };
 
-    // Extract transaction details from JSON and convert to cosmwasm_std types
-    let to_address = tx_json["body"]["messages"][0]["to_address"]
-        .as_str()
-        .ok_or_else(|| ic_cosmos::rpc_client::RpcError::ParseError("Missing to_address".to_string()))?;
-
-    // Parse amounts and convert to CosmosCoin
-    let amount_array = tx_json["body"]["messages"][0]["amount"]
-        .as_array()
-        .ok_or_else(|| ic_cosmos::rpc_client::RpcError::ParseError("Missing amount array".to_string()))?;
-
-    let mut amounts = Vec::new();
-    for amt in amount_array {
-        let denom = amt["denom"]
-            .as_str()
-            .ok_or_else(|| ic_cosmos::rpc_client::RpcError::ParseError("Missing denom".to_string()))?;
-        let amount_str = amt["amount"]
-            .as_str()
-            .ok_or_else(|| ic_cosmos::rpc_client::RpcError::ParseError("Missing amount".to_string()))?;
-
-        amounts.push(CosmosCoin::new(denom, amount_str));
-    }
-
     // Parse fee and convert to CosmosCoin
     let fee_array = tx_json["auth_info"]["fee"]["amount"]
         .as_array()
@@ -269,9 +283,7 @@ pub async fn send_cosmos_transaction(
 
     // Create transaction structure
     let transaction = CosmosTransaction {
-        from_address: from_address.to_string(),
-        to_address: to_address.to_string(),
-        amount: amounts,
+        messages: cosmos_messages,
         fee: fees,
         gas_limit,
         memo: memo.to_string(),

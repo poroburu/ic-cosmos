@@ -1,29 +1,57 @@
 use cosmos_utils::*;
 use hex;
 use std::env;
+use std::fs;
+
+fn analyze_transaction_result(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let json_content = fs::read_to_string(file_path)?;
+    analyze_gas_usage_from_result(&json_content)?;
+    Ok(())
+}
 
 fn print_usage() {
     println!("Usage:");
     println!("  build    - Build a new transaction and output the signing command");
-    println!("  raw      - Generate raw unsigned transaction and save JSON to rawtx.json");
+    println!("  raw <message_type> - Generate wallet transaction and output sendCosmosTransaction command");
+    println!("    message_type can be: send, delegate");
     println!("  send <signature_blob> - Create and output a signed transaction in base64 format");
     println!("  broadcast <tx_base64> - Broadcast a signed transaction to the Cosmos Provider testnet");
     println!("  fund     - Print Gaia CLI command to fund the wallet from faucet");
     println!("  test-query <cosmos_address> - Show protobuf encoding for account query");
+    println!("  analyze <tx_result_json_file> - Analyze gas usage from transaction result");
     println!("\nExample:");
     println!("  cargo run -- build");
-    println!("  cargo run -- raw");
+    println!("  cargo run -- raw send");
+    println!("  cargo run -- raw delegate");
     println!("  cargo run -- send \"\\fd\\ce\\16\\49\\7b\\c7\\d5\\16\\37\\b8\\4c\\57\\42\\ea\\ed\\78\\44\\b3\\ce\\ec\\1b\\7a\\dc\\e9\\f3\\f5\\e4\\38\\03\\c7\\6c\\e4\\2a\\53\\c6\\42\\c5\\d2\\db\\f5\\e4\\f8\\69\\ca\\b9\\b2\\cc\\fc\\fa\\41\\c0\\63\\77\\7e\\bc\\99\\b0\\85\\18\\a1\\94\\c9\\c4\\ec\"");
     println!("  cargo run -- broadcast \"CpABCo0BChwvY29zbW9zLmJhbmsudjFiZXRhMS5Nc2dTZW5k...\"");
     println!("  cargo run -- fund");
     println!("  cargo run -- test-query cosmos17xqjqfljz4aq6nurwg9r3r9l7gxtajz0hq3ewf");
+    println!("  cargo run -- analyze tx_result.json");
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     match args.get(1).map(|s| s.as_str()) {
         Some("build") => build_transaction()?,
-        Some("raw") => generate_raw_transaction()?,
+        Some("raw") => {
+            if let Some(message_type) = args.get(2) {
+                match message_type.as_str() {
+                    "send" => generate_raw_transaction(MessageType::Send)?,
+                    "delegate" => generate_raw_transaction(MessageType::Delegate)?,
+                    _ => {
+                        println!(
+                            "Error: Unsupported message type '{}'. Supported types: send, delegate",
+                            message_type
+                        );
+                        print_usage();
+                    }
+                }
+            } else {
+                println!("Error: Message type required for raw command");
+                print_usage();
+            }
+        }
         Some("send") => {
             if let Some(signature) = args.get(2) {
                 send_signed_transaction(signature)?
@@ -119,6 +147,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             } else {
                 println!("Error: Cosmos address required for test-query command");
+                print_usage();
+            }
+        }
+        Some("analyze") => {
+            if let Some(file) = args.get(2) {
+                analyze_transaction_result(file)?
+            } else {
+                println!("Error: Transaction result file required for analyze command");
                 print_usage();
             }
         }
