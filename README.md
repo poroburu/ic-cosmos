@@ -4,14 +4,14 @@
 [![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg?logo=apache&style=for-the-badge)](LICENSE)
 [![Tests Status](https://img.shields.io/github/actions/workflow/status/mfactory-lab/ic-cosmos/ci.yml?logo=githubactions&logoColor=white&style=for-the-badge&label=tests)](./.github/workflows/ci.yml)
 
-> #### Interact with [Cosmos](https://cosmos.com) from the [Internet Computer](https://internetcomputer.org/).
+> #### Interact with [Cosmos](https://cosmos.network/) from the [Internet Computer](https://internetcomputer.org/).
 
 > [!Note]
 > This project is a work in progress and is not yet ready for production use. We are happy to answer questions if they are raised as issues in this GitHub repo.
 
 ## Overview
 
-**IC-Cosmos** is a cosution that connects the [Internet Computer](https://internetcomputer.org/) with [Cosmos](https://cosmos.com/). It allows developers to build decentralized applications (dApps) on the Internet Computer with functionality comparable to traditional Cosmos dApps. This integration combines the capabilities of both blockchain networks, making it easier to develop cross-chain applications and expand the possibilities for decentralized cosutions.
+**IC-Cosmos** is a solution that connects the [Internet Computer](https://internetcomputer.org/) with [Cosmos](https://cosmos.network/). It allows developers to build decentralized applications (dApps) on the Internet Computer with functionality comparable to traditional Cosmos dApps. This integration combines the capabilities of both blockchain networks, making it easier to develop cross-chain applications and expand the possibilities for decentralized solutions.
 
 ## Quick start
 
