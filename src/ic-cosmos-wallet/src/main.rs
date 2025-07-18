@@ -1,4 +1,3 @@
-use std::str::FromStr;
 
 use candid::candid_method;
 use ic_cdk::update;
@@ -6,8 +5,8 @@ use ic_cosmos::{
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
         build_transaction_for_broadcast, create_sign_doc_bytes, extract_signer_address_from_message,
-        parse_account_info_from_abci, public_key_to_cosmos_address, BlockHash, CosmosCoin, CosmosMessage,
-        CosmosTransaction, Pubkey, RpcSendTransactionConfig, Transaction,
+        parse_account_info_from_abci, public_key_to_cosmos_address, CosmosCoin, CosmosMessage,
+        CosmosTransaction, Pubkey,
     },
 };
 use ic_cosmos_wallet::{
@@ -59,58 +58,6 @@ pub async fn sign_message(message: Vec<u8>) -> Vec<u8> {
     sign_with_ecdsa(key_name, derived_path, message).await
 }
 
-/// Signs and sends a transaction to the Cosmos network.
-///
-/// # Parameters
-///
-/// - `provider` (`String`): The Cosmos RPC provider ID.
-/// - `raw_transaction` (`String`): The serialized unsigned transaction.
-/// - `config` (`Option<RpcSendTransactionConfig>`): Optional configuration for sending the
-///   transaction.
-///
-/// # Returns
-///
-/// - `RpcResult<String>`: The transaction signature as a string on success, or an `RpcError` on
-///   failure.
-#[update(name = "sendTransaction")]
-#[candid_method(update, rename = "sendTransaction")]
-pub async fn send_transaction(
-    source: RpcServices,
-    config: Option<RpcConfig>,
-    raw_transaction: String,
-    params: Option<RpcSendTransactionConfig>,
-) -> RpcResult<String> {
-    let caller = validate_caller_not_anonymous();
-    let cos_canister = read_state(|s| s.cos_canister);
-
-    let mut tx = Transaction::from_str(&raw_transaction).expect("Invalid transaction");
-
-    // Fetch the recent blockhash if it's not set
-    if tx.message.recent_blockhash == BlockHash::default() {
-        let response =
-            ic_cdk::call::<_, (RpcResult<String>,)>(cos_canister, "cos_getLatestBlockhash", (&source,)).await?;
-        tx.message.recent_blockhash = BlockHash::from_str(&response.0?).expect("Invalid recent blockhash");
-    }
-
-    let key_name = read_state(|s| s.ecdsa_key.to_owned());
-    let derived_path = vec![caller.as_slice().to_vec()];
-
-    let signature = sign_with_ecdsa(key_name, derived_path, tx.message_data())
-        .await
-        .try_into()
-        .expect("Invalid signature");
-
-    tx.add_signature(0, signature);
-
-    let response = ic_cdk::call::<_, (RpcResult<String>,)>(
-        cos_canister,
-        "cos_sendTransaction",
-        (&source, config, tx.to_string(), params),
-    )
-    .await?;
-
-    response.0
-}
 
 /// Returns the Cosmos address derived from the caller's public key.
 ///
