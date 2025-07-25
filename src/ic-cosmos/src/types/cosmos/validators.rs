@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::cosmos_common::PubKey;
+use crate::types::cosmos::common::PubKey;
 
 /// Represents the response from the /validators endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]

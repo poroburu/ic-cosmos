@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::cosmos_common::ConsensusParams;
+use crate::types::cosmos::common::ConsensusParams;
 
 /// Represents the response from the /consensus_params endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]

@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::cosmos_common::BlockHeader;
+use crate::types::cosmos::common::BlockHeader;
 
 /// Represents the response from the /header endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]

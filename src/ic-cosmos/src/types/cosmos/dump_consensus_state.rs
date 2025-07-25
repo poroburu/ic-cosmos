@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::cosmos_common::{PubKey, ValidatorPriority};
+use crate::types::cosmos::common::{PubKey, ValidatorPriority};
 
 /// Represents the dump consensus state response from a Cosmos node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]

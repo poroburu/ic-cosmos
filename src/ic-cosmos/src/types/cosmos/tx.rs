@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::cosmos_common::Event;
+use crate::types::cosmos::common::Event;
 
 /// Represents the response from the /tx endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]

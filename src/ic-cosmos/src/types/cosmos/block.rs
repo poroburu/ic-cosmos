@@ -2,7 +2,7 @@ use candid::CandidType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::types::cosmos_common::{BlockHeader, BlockID, ConsensusParams, Event, Evidence};
+use crate::types::cosmos::common::{BlockHeader, BlockID, ConsensusParams, Event, Evidence};
 
 /// Represents the block response from a Cosmos node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]

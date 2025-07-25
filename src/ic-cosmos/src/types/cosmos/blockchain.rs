@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::cosmos_common::{BlockHeader, BlockID};
+use crate::types::cosmos::common::{BlockHeader, BlockID};
 
 /// Represents the response from the /blockchain endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]

@@ -1,7 +1,7 @@
 use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
-use super::cosmos_common::{NodeInfo, PubKey};
+use super::common::{NodeInfo, PubKey};
 
 /// Represents the complete status response from a Cosmos node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, CandidType)]
