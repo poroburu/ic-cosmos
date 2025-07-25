@@ -26,7 +26,6 @@ pub use candid_value::*;
 pub use cluster::*;
 pub use commitment::*;
 pub use config::*;
-pub use cosmos::*;
 pub use fees::*;
 pub use filter::*;
 pub use instruction::*;

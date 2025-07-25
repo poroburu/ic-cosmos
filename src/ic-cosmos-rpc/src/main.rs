@@ -11,9 +11,12 @@ use ic_cosmos::{
     request::RpcRequest,
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
-        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CandidValue,
-        CheckTxResult, CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
-        NumUnconfirmedTransactionsResult, Status, Tx, ValidatorsResult,
+        cosmos::{
+            ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CheckTxResult,
+            CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
+            NumUnconfirmedTransactionsResult, Status, Tx, ValidatorsResult,
+        },
+        CandidValue,
     },
 };
 use ic_cosmos_rpc::{

@@ -15,9 +15,11 @@ use crate::{
     request::RpcRequest,
     rpc_client::multi_call::{MultiCallError, MultiCallResults},
     types::{
-        ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CheckTxResult,
-        CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
-        NumUnconfirmedTransactionsResult, Status, Tx, ValidatorsResult,
+        cosmos::{
+            ABCIQueryResult, AbciInfo, BlockComplete, BlockResults, Blockchain, BroadcastTxResult, CheckTxResult,
+            CommitResult, ConsensusParamsResult, ConsensusState, DumpConsensusState, HeaderResult, NetInfo,
+            NumUnconfirmedTransactionsResult, Status, Tx, ValidatorsResult,
+        },
     },
 };
 

@@ -4,9 +4,12 @@ use ic_cdk::update;
 use ic_cosmos::{
     rpc_client::{RpcConfig, RpcResult, RpcServices},
     types::{
-        build_transaction_for_broadcast, create_sign_doc_bytes, extract_signer_address_from_message,
-        parse_account_info_from_abci, public_key_to_cosmos_address, CosmosCoin, CosmosMessage,
-        CosmosTransaction, Pubkey,
+        cosmos::{
+            build_transaction_for_broadcast, create_sign_doc_bytes, extract_signer_address_from_message,
+            parse_account_info_from_abci, public_key_to_cosmos_address, ABCIQueryResult, BroadcastTxResult,
+            CosmosCoin, CosmosMessage, CosmosTransaction,
+        },
+        Pubkey,
     },
 };
 use ic_cosmos_wallet::{
@@ -160,7 +163,7 @@ pub async fn send_cosmos_transaction(
         our_cosmos_address.len(),
         hex::encode(our_cosmos_address.as_bytes())
     );
-    let account_info_result = ic_cdk::call::<_, (RpcResult<ic_cosmos::types::ABCIQueryResult>,)>(
+    let account_info_result = ic_cdk::call::<_, (RpcResult<ABCIQueryResult>,)>(
         cos_canister,
         "cos_getAbciQuery",
         (
@@ -261,7 +264,7 @@ pub async fn send_cosmos_transaction(
         .map_err(|e| ic_cosmos::rpc_client::RpcError::ParseError(e))?;
 
     // Broadcast the transaction
-    let broadcast_result = ic_cdk::call::<_, (RpcResult<ic_cosmos::types::BroadcastTxResult>,)>(
+    let broadcast_result = ic_cdk::call::<_, (RpcResult<BroadcastTxResult>,)>(
         cos_canister,
         "cos_getBroadcastTxSync",
         (&source, config, tx_base64),
